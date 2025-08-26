@@ -81,6 +81,14 @@ function Bubble() {
   const startRecording = async () => {
     if (!audioCapture.current) return;
 
+    // Dispose and recreate AudioCapture to ensure clean state
+    audioCapture.current.dispose();
+    audioCapture.current = new AudioCapture({
+      sampleRate: 16000,
+      channels: 1,
+      bufferSize: 2048
+    });
+
     const initialized = await initializeAudio();
     if (!initialized) return;
 

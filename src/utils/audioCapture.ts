@@ -52,7 +52,10 @@ export class AudioCapture {
         if (this.isRecording) {
           const inputBuffer = event.inputBuffer;
           const inputData = inputBuffer.getChannelData(0);
-          this.pcmBuffer.push(new Float32Array(inputData));
+          // Create a copy to avoid reference issues
+          const bufferCopy = new Float32Array(inputData.length);
+          bufferCopy.set(inputData);
+          this.pcmBuffer.push(bufferCopy);
         }
       };
       
@@ -70,15 +73,25 @@ export class AudioCapture {
       throw new Error('Audio capture not initialized');
     }
 
+    // Force clear all buffers and reset state
     this.pcmBuffer = [];
-    this.isRecording = true;
-    this.startLevelMonitoring();
+    this.isRecording = false; // Set false first to stop any ongoing processing
+    
+    // Small delay to ensure any pending audio processing completes
+    setTimeout(() => {
+      this.pcmBuffer = []; // Clear again to be sure
+      this.isRecording = true;
+      this.startLevelMonitoring();
+      console.log('Recording started with clean buffer');
+    }, 10);
   }
 
   stopRecording(): Float32Array {
     this.isRecording = false;
     this.stopLevelMonitoring();
 
+    console.log('Stopping recording, buffer count:', this.pcmBuffer.length);
+    
     // Concatenate all PCM buffers
     const totalLength = this.pcmBuffer.reduce((sum, buffer) => sum + buffer.length, 0);
     const result = new Float32Array(totalLength);
@@ -90,15 +103,25 @@ export class AudioCapture {
     }
 
     console.log('Captured audio:', {
+      bufferCount: this.pcmBuffer.length,
       samples: result.length,
       duration: result.length / (this.audioContext?.sampleRate || 16000),
       actualSampleRate: this.audioContext?.sampleRate,
       targetSampleRate: this.options.sampleRate
     });
 
+    // Clear buffer immediately after use
+    this.pcmBuffer = [];
+
     // Resample to target sample rate if different
     if (this.audioContext && this.audioContext.sampleRate !== this.options.sampleRate) {
-      return this.resample(result, this.audioContext.sampleRate, this.options.sampleRate);
+      const resampled = this.resample(result, this.audioContext.sampleRate, this.options.sampleRate);
+      console.log('Final resampled audio:', {
+        originalSamples: result.length,
+        resampledSamples: resampled.length,
+        resampledDuration: resampled.length / this.options.sampleRate
+      });
+      return resampled;
     }
 
     return result;
