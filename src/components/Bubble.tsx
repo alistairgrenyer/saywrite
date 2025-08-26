@@ -35,8 +35,7 @@ function Bubble() {
       setRecording(false);
       setIsProcessing(false);
       setAudioLevel({ rms: 0, peak: 0, timestamp: 0 });
-      setRecordingDuration(0);
-      setRecordingSize(0);
+      // Don't reset recording duration/size here - keep for playback
       if (durationInterval.current) {
         clearInterval(durationInterval.current);
         durationInterval.current = null;
@@ -86,12 +85,17 @@ function Bubble() {
     if (!initialized) return;
 
     try {
-      audioCapture.current.startRecording();
-      setRecording(true);
+      // Clear all previous state before starting new recording
       setTranscript("");
+      setAudioData(null);
+      setFinalRecordingDuration(0);
       setError(null);
       setRecordingDuration(0);
       setRecordingSize(0);
+      setIsProcessing(false);
+      
+      audioCapture.current.startRecording();
+      setRecording(true);
       recordingStartTime.current = Date.now();
       
       // Start duration timer
@@ -117,11 +121,16 @@ function Bubble() {
       setRecording(false); // Set recording to false immediately for UI feedback
       setAudioLevel({ rms: 0, peak: 0, timestamp: 0 });
       
-      // Store final duration and make a COPY of audio data for playback
+      // Store final duration and convert Float32Array to ArrayBuffer for playback
       setFinalRecordingDuration(recordingDuration);
-      // Create a separate copy for playback to avoid interfering with transcription
-      const audioDataCopy = pcmData.slice(0);
-      setAudioData(audioDataCopy);
+      // Convert Float32Array to Int16Array (16-bit PCM) for proper audio playback
+      const int16Data = new Int16Array(pcmData.length);
+      for (let i = 0; i < pcmData.length; i++) {
+        // Convert from float (-1 to 1) to 16-bit signed integer
+        const sample = Math.max(-1, Math.min(1, pcmData[i]));
+        int16Data[i] = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
+      }
+      setAudioData(int16Data.buffer.slice(0));
       
       // Clear duration timer
       if (durationInterval.current) {
@@ -132,7 +141,7 @@ function Bubble() {
       // Show processing state
       setIsProcessing(true);
       
-      // Send ORIGINAL PCM data to main process for transcription (untouched)
+      // Send original Float32Array data to main process for transcription
       await window.app.stopRecording(pcmData);
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Failed to stop recording';

@@ -21,7 +21,8 @@ export function AudioPlayback({ audioData, duration, onClose }: AudioPlaybackPro
 
     const createWavFile = (pcmData: ArrayBuffer) => {
       const pcmArray = new Int16Array(pcmData);
-      const sampleRate = 16000;
+      // Use the actual sample rate from audio context for playback
+      const sampleRate = 16000; // This should match the resampled rate
       const numChannels = 1;
       const bitsPerSample = 16;
       const bytesPerSample = bitsPerSample / 8;
@@ -66,6 +67,21 @@ export function AudioPlayback({ audioData, duration, onClose }: AudioPlaybackPro
       const blob = new Blob([wavData], { type: 'audio/wav' });
       const url = URL.createObjectURL(blob);
       setAudioUrl(url);
+      
+      // Debug: Log audio info
+      console.log('Created WAV file:', {
+        originalSize: audioData.byteLength,
+        wavSize: wavData.byteLength,
+        sampleRate: 16000,
+        duration: (new Int16Array(audioData).length / 16000).toFixed(2) + 's',
+        samples: new Int16Array(audioData).length
+      });
+      
+      // Test if audio data has actual content
+      const samples = new Int16Array(audioData);
+      const hasContent = samples.some(sample => Math.abs(sample) > 100);
+      const maxSample = Math.max(...Array.from(samples).map(Math.abs));
+      console.log('Audio has content:', hasContent, 'Max sample:', maxSample, 'Sample rate in WAV:', 16000);
       
       return () => {
         URL.revokeObjectURL(url);
@@ -149,8 +165,8 @@ export function AudioPlayback({ audioData, duration, onClose }: AudioPlaybackPro
       }
       ctx.stroke();
       
-      // Draw progress overlay
-      ctx.fillStyle = 'rgba(52, 199, 89, 0.3)';
+      // Draw progress overlay (more subtle)
+      ctx.fillStyle = 'rgba(52, 199, 89, 0.2)';
       ctx.fillRect(0, 0, progressWidth, height);
       
       if (isPlaying) {
@@ -170,13 +186,26 @@ export function AudioPlayback({ audioData, duration, onClose }: AudioPlaybackPro
   }, [audioData, isPlaying]);
 
   const togglePlayback = () => {
-    if (!audioRef.current || !audioUrl) return;
+    if (!audioRef.current || !audioUrl) {
+      console.log('Audio not ready:', { audioRef: !!audioRef.current, audioUrl: !!audioUrl });
+      return;
+    }
 
     if (isPlaying) {
       audioRef.current.pause();
     } else {
+      // Reset to beginning if at end
+      if (audioRef.current.ended) {
+        audioRef.current.currentTime = 0;
+      }
+      
       audioRef.current.play().catch(error => {
         console.error('Playback failed:', error);
+        console.log('Audio element state:', {
+          readyState: audioRef.current?.readyState,
+          networkState: audioRef.current?.networkState,
+          error: audioRef.current?.error
+        });
       });
     }
   };
@@ -210,7 +239,11 @@ export function AudioPlayback({ audioData, duration, onClose }: AudioPlaybackPro
           onPlay={handlePlay}
           onPause={handlePause}
           onEnded={handleEnded}
-          preload="metadata"
+          onLoadedMetadata={() => console.log('Audio metadata loaded')}
+          onCanPlay={() => console.log('Audio can play')}
+          onError={(e) => console.error('Audio error:', e)}
+          preload="auto"
+          controls={false}
         />
       )}
       
@@ -236,7 +269,7 @@ export function AudioPlayback({ audioData, duration, onClose }: AudioPlaybackPro
         ref={canvasRef}
         className="waveform-canvas"
         width={280}
-        height={60}
+        height={40}
       />
     </div>
   );

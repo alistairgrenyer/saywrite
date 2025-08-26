@@ -30,7 +30,6 @@ export class AudioCapture {
     try {
       this.mediaStream = await navigator.mediaDevices.getUserMedia({
         audio: {
-          sampleRate: this.options.sampleRate,
           channelCount: this.options.channels,
           echoCancellation: true,
           noiseSuppression: true,
@@ -38,7 +37,9 @@ export class AudioCapture {
         }
       });
 
-      this.audioContext = new AudioContext({ sampleRate: this.options.sampleRate });
+      // Use browser's default sample rate, then resample if needed
+      this.audioContext = new AudioContext();
+      console.log('AudioContext sample rate:', this.audioContext.sampleRate);
       const source = this.audioContext.createMediaStreamSource(this.mediaStream);
       
       this.analyser = this.audioContext.createAnalyser();
@@ -88,6 +89,42 @@ export class AudioCapture {
       offset += buffer.length;
     }
 
+    console.log('Captured audio:', {
+      samples: result.length,
+      duration: result.length / (this.audioContext?.sampleRate || 16000),
+      actualSampleRate: this.audioContext?.sampleRate,
+      targetSampleRate: this.options.sampleRate
+    });
+
+    // Resample to target sample rate if different
+    if (this.audioContext && this.audioContext.sampleRate !== this.options.sampleRate) {
+      return this.resample(result, this.audioContext.sampleRate, this.options.sampleRate);
+    }
+
+    return result;
+  }
+
+  private resample(audioData: Float32Array, fromRate: number, toRate: number): Float32Array {
+    if (fromRate === toRate) return audioData;
+    
+    const ratio = fromRate / toRate;
+    const newLength = Math.floor(audioData.length / ratio);
+    const result = new Float32Array(newLength);
+    
+    for (let i = 0; i < newLength; i++) {
+      const srcIndex = i * ratio;
+      const index = Math.floor(srcIndex);
+      const fraction = srcIndex - index;
+      
+      if (index + 1 < audioData.length) {
+        // Linear interpolation
+        result[i] = audioData[index] * (1 - fraction) + audioData[index + 1] * fraction;
+      } else {
+        result[i] = audioData[index];
+      }
+    }
+    
+    console.log(`Resampled from ${fromRate}Hz to ${toRate}Hz: ${audioData.length} -> ${result.length} samples`);
     return result;
   }
 
