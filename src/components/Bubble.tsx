@@ -27,14 +27,12 @@ function Bubble() {
 
     // Set up IPC listeners
     window.app.onFinal((text) => {
-      console.log('Received transcription:', text);
       setTranscript(text);
       setRecording(false);
       setAudioLevel({ rms: 0, peak: 0, timestamp: 0 });
     });
 
     window.app.onSTTError((errorMsg) => {
-      console.error('STT Error:', errorMsg);
       setError(errorMsg);
       setRecording(false);
       setAudioLevel({ rms: 0, peak: 0, timestamp: 0 });

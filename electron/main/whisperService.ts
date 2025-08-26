@@ -70,36 +70,28 @@ export class WhisperService {
       let stderr = '';
 
       whisperProcess.stdout?.on('data', (data) => {
-        const chunk = data.toString();
-        console.log('Whisper stdout:', chunk);
-        stdout += chunk;
+        stdout += data.toString();
       });
 
       whisperProcess.stderr?.on('data', (data) => {
-        const chunk = data.toString();
-        console.log('Whisper stderr:', chunk);
-        stderr += chunk;
+        stderr += data.toString();
       });
 
       whisperProcess.on('close', (code) => {
-        console.log(`Whisper process closed with code: ${code}`);
-        console.log('Final stdout:', stdout);
-        console.log('Final stderr:', stderr);
-        
         if (code !== 0) {
           reject(new Error(`Whisper process failed with code ${code}\nStderr: ${stderr}\nStdout: ${stdout}`));
           return;
         }
 
         try {
-          // Parse stdout for transcription text
-          const lines = stdout.split('\n').filter(line => line.trim());
-          const transcriptionText = lines.join(' ').trim();
-          
-          console.log('Parsed transcription:', transcriptionText);
+          // Parse stdout and clean up special tokens
+          const cleanText = stdout
+            .replace(/<\|endoftext\|>/g, '')
+            .replace(/\s+/g, ' ')
+            .trim();
           
           resolve({
-            text: transcriptionText,
+            text: cleanText,
             confidence: undefined,
             duration: undefined
           });
