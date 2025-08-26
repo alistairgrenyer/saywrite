@@ -1,4 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { AudioLevelData } from '../utils/audioCapture';
+import { RecordingMeter } from './RecordingMeter';
 import './DraggableBubble.css';
 
 interface DraggableBubbleProps {
@@ -7,6 +9,9 @@ interface DraggableBubbleProps {
   onToggleRecording: () => void;
   position: { x: number; y: number };
   onPositionChange: (position: { x: number; y: number }) => void;
+  audioLevel: AudioLevelData;
+  recordingDuration: number;
+  recordingSize: number;
 }
 
 export function DraggableBubble({ 
@@ -14,7 +19,10 @@ export function DraggableBubble({
   isInitializing, 
   onToggleRecording, 
   position, 
-  onPositionChange 
+  onPositionChange,
+  audioLevel,
+  recordingDuration,
+  recordingSize
 }: DraggableBubbleProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
@@ -135,6 +143,13 @@ export function DraggableBubble({
         <button className="settings-button" aria-label="Settings">
           ⚙️
         </button>
+        
+        <RecordingMeter
+          audioLevel={audioLevel}
+          recordingDuration={recordingDuration}
+          recordingSize={recordingSize}
+          isVisible={recording}
+        />
       </div>
     </div>
   );

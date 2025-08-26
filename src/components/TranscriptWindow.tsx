@@ -2,12 +2,13 @@ import './TranscriptWindow.css';
 
 interface TranscriptWindowProps {
   text: string;
+  isProcessing?: boolean;
   position: { x: number; y: number };
   onClose: () => void;
 }
 
-export function TranscriptWindow({ text, position, onClose }: TranscriptWindowProps) {
-  if (!text) return null;
+export function TranscriptWindow({ text, isProcessing = false, position, onClose }: TranscriptWindowProps) {
+  if (!text && !isProcessing) return null;
 
   return (
     <div 
@@ -24,7 +25,20 @@ export function TranscriptWindow({ text, position, onClose }: TranscriptWindowPr
           <span className="transcript-title">Transcription</span>
           <button className="transcript-close" onClick={onClose}>×</button>
         </div>
-        <div className="transcript-text">{text}</div>
+        <div className="transcript-text">
+          {isProcessing ? (
+            <div className="processing-indicator">
+              <span>Processing</span>
+              <div className="dots">
+                <span>.</span>
+                <span>.</span>
+                <span>.</span>
+              </div>
+            </div>
+          ) : (
+            text
+          )}
+        </div>
       </div>
     </div>
   );
