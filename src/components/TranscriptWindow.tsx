@@ -49,7 +49,6 @@ export function TranscriptWindow({
           <AudioPlayback
             audioData={audioData}
             duration={recordingDuration}
-            onClose={() => {}}
           />
         )}
         

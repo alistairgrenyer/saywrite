@@ -4,10 +4,9 @@ import './AudioPlayback.css';
 interface AudioPlaybackProps {
   audioData: ArrayBuffer;
   duration: number;
-  onClose: () => void;
 }
 
-export function AudioPlayback({ audioData, duration, onClose }: AudioPlaybackProps) {
+export function AudioPlayback({ audioData, duration }: AudioPlaybackProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
@@ -103,71 +102,61 @@ export function AudioPlayback({ audioData, duration, onClose }: AudioPlaybackPro
     const width = canvas.width;
     const height = canvas.height;
     
-    ctx.clearRect(0, 0, width, height);
-    ctx.fillStyle = '#333';
-    ctx.fillRect(0, 0, width, height);
-
-    // Draw waveform
-    const samplesPerPixel = Math.floor(pcmArray.length / width);
-    ctx.strokeStyle = '#666';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-
-    for (let x = 0; x < width; x++) {
-      const startSample = x * samplesPerPixel;
-      const endSample = Math.min(startSample + samplesPerPixel, pcmArray.length);
+    const drawWaveform = (showPausedPosition = false) => {
+      ctx.clearRect(0, 0, width, height);
       
-      let max = 0;
-      for (let i = startSample; i < endSample; i++) {
-        max = Math.max(max, Math.abs(pcmArray[i]));
-      }
-      
-      const normalizedHeight = (max / 32768) * (height / 2);
-      const y1 = (height / 2) - normalizedHeight;
-      const y2 = (height / 2) + normalizedHeight;
-      
-      ctx.moveTo(x, y1);
-      ctx.lineTo(x, y2);
-    }
-    ctx.stroke();
-
-    // Draw progress overlay
-    const drawProgress = () => {
-      if (!audioRef.current || !audioRef.current.duration) return;
-      
-      const progress = audioRef.current.currentTime / audioRef.current.duration;
+      const progress = audioRef.current ? currentTime / audioRef.current.duration : 0;
       const progressWidth = width * progress;
       
-      // Redraw waveform first
-      ctx.clearRect(0, 0, width, height);
-      ctx.fillStyle = '#333';
-      ctx.fillRect(0, 0, width, height);
+      // Draw waveform bars
+      const samplesPerPixel = Math.floor(pcmArray.length / width);
+      const barWidth = Math.max(1, width / Math.min(width, 200)); // Limit bars for performance
       
-      // Redraw waveform bars
-      ctx.strokeStyle = '#666';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      for (let x = 0; x < width; x++) {
-        const startSample = x * samplesPerPixel;
-        const endSample = Math.min(startSample + samplesPerPixel, pcmArray.length);
+      for (let x = 0; x < width; x += barWidth) {
+        const startSample = Math.floor(x * samplesPerPixel);
+        const endSample = Math.min(startSample + samplesPerPixel * barWidth, pcmArray.length);
         
         let max = 0;
         for (let i = startSample; i < endSample; i++) {
           max = Math.max(max, Math.abs(pcmArray[i]));
         }
         
-        const normalizedHeight = (max / 32768) * (height / 2);
-        const y1 = (height / 2) - normalizedHeight;
-        const y2 = (height / 2) + normalizedHeight;
+        const normalizedHeight = (max / 32768) * (height * 0.8);
+        const barHeight = Math.max(2, normalizedHeight);
+        const y = (height - barHeight) / 2;
         
-        ctx.moveTo(x, y1);
-        ctx.lineTo(x, y2);
+        // Color based on progress when paused or playing
+        if (showPausedPosition || isPlaying) {
+          if (x < progressWidth) {
+            ctx.fillStyle = '#34c759'; // Played portion - green
+          } else {
+            ctx.fillStyle = '#666'; // Unplayed portion - gray
+          }
+        } else {
+          ctx.fillStyle = '#666'; // Default gray when no position set
+        }
+        ctx.fillRect(x, y, Math.max(1, barWidth - 1), barHeight);
       }
-      ctx.stroke();
       
-      // Draw progress overlay (more subtle)
-      ctx.fillStyle = 'rgba(52, 199, 89, 0.2)';
-      ctx.fillRect(0, 0, progressWidth, height);
+      // Draw playhead line when paused or playing
+      if ((showPausedPosition || isPlaying) && audioRef.current) {
+        ctx.strokeStyle = '#34c759';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(progressWidth, 0);
+        ctx.lineTo(progressWidth, height);
+        ctx.stroke();
+      }
+    };
+    
+    // Show paused position if we have a current time set
+    drawWaveform(currentTime > 0);
+
+    // Draw progress overlay during playback
+    const drawProgress = () => {
+      if (!audioRef.current || !audioRef.current.duration) return;
+      
+      drawWaveform(true); // Always show position during playback
       
       if (isPlaying) {
         animationRef.current = requestAnimationFrame(drawProgress);
@@ -183,7 +172,7 @@ export function AudioPlayback({ audioData, duration, onClose }: AudioPlaybackPro
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [audioData, isPlaying]);
+  }, [audioData, isPlaying, currentTime]);
 
   const togglePlayback = () => {
     if (!audioRef.current || !audioUrl) {
@@ -223,6 +212,66 @@ export function AudioPlayback({ audioData, duration, onClose }: AudioPlaybackPro
     setCurrentTime(0);
   };
 
+  const handleWaveformClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (!audioRef.current || !canvasRef.current) return;
+    
+    const canvas = canvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const progress = x / rect.width;
+    
+    // Seek to clicked position
+    const newTime = progress * audioRef.current.duration;
+    audioRef.current.currentTime = newTime;
+    setCurrentTime(newTime);
+    
+    // Force redraw to show new position immediately
+    if (!isPlaying && canvasRef.current) {
+      const ctx = canvasRef.current.getContext('2d');
+      if (ctx) {
+        const pcmArray = new Int16Array(audioData);
+        const width = canvas.width;
+        const height = canvas.height;
+        const progressWidth = width * progress;
+        
+        ctx.clearRect(0, 0, width, height);
+        
+        const samplesPerPixel = Math.floor(pcmArray.length / width);
+        const barWidth = Math.max(1, width / Math.min(width, 200));
+        
+        for (let x = 0; x < width; x += barWidth) {
+          const startSample = Math.floor(x * samplesPerPixel);
+          const endSample = Math.min(startSample + samplesPerPixel * barWidth, pcmArray.length);
+          
+          let max = 0;
+          for (let i = startSample; i < endSample; i++) {
+            max = Math.max(max, Math.abs(pcmArray[i]));
+          }
+          
+          const normalizedHeight = (max / 32768) * (height * 0.8);
+          const barHeight = Math.max(2, normalizedHeight);
+          const y = (height - barHeight) / 2;
+          
+          // Color based on new progress
+          if (x < progressWidth) {
+            ctx.fillStyle = '#34c759'; // Played portion - green
+          } else {
+            ctx.fillStyle = '#666'; // Unplayed portion - gray
+          }
+          ctx.fillRect(x, y, Math.max(1, barWidth - 1), barHeight);
+        }
+        
+        // Draw playhead line at new position
+        ctx.strokeStyle = '#34c759';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(progressWidth, 0);
+        ctx.lineTo(progressWidth, height);
+        ctx.stroke();
+      }
+    }
+  };
+
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
@@ -256,21 +305,21 @@ export function AudioPlayback({ audioData, duration, onClose }: AudioPlaybackPro
           {isPlaying ? '⏸️' : '▶️'}
         </button>
         
+        <div className="waveform-container" onClick={handleWaveformClick}>
+          <canvas 
+            ref={canvasRef}
+            className="waveform-canvas"
+            width={400}
+            height={50}
+          />
+        </div>
+        
         <div className="time-display">
           <span>{formatTime(currentTime)}</span>
           <span className="separator">/</span>
           <span>{formatTime(duration)}</span>
         </div>
-        
-        <button className="close-button" onClick={onClose}>×</button>
       </div>
-      
-      <canvas 
-        ref={canvasRef}
-        className="waveform-canvas"
-        width={280}
-        height={40}
-      />
     </div>
   );
 }
