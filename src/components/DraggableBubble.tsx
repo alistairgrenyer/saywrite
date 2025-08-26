@@ -18,6 +18,7 @@ export function DraggableBubble({
 }: DraggableBubbleProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [hasDragged, setHasDragged] = useState(false);
   const bubbleRef = useRef<HTMLDivElement>(null);
   const animationRef = useRef<number>();
 
@@ -30,11 +31,14 @@ export function DraggableBubble({
       y: e.clientY - rect.top
     });
     setIsDragging(true);
+    setHasDragged(false);
     e.preventDefault();
   }, []);
 
   const handleMouseMove = useCallback((e: MouseEvent) => {
     if (!isDragging || !bubbleRef.current) return;
+
+    setHasDragged(true);
 
     // Cancel any pending animation frame
     if (animationRef.current) {
@@ -103,7 +107,14 @@ export function DraggableBubble({
     >
       <div className="bubble-content">
         <button
-          onClick={onToggleRecording}
+          onClick={(e) => {
+            // Prevent recording if we just finished dragging
+            if (hasDragged) {
+              e.preventDefault();
+              return;
+            }
+            onToggleRecording();
+          }}
           disabled={isInitializing}
           className={`main-mic-button ${recording ? 'recording' : 'idle'} ${isInitializing ? 'initializing' : ''}`}
           aria-label={recording ? 'Stop recording' : 'Start recording'}
