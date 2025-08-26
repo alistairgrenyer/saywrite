@@ -11,6 +11,8 @@ function Bubble() {
   const [audioLevel, setAudioLevel] = useState<AudioLevelData>({ rms: 0, peak: 0, timestamp: 0 });
   const [recordingDuration, setRecordingDuration] = useState(0);
   const [recordingSize, setRecordingSize] = useState(0);
+  const [audioData, setAudioData] = useState<ArrayBuffer | null>(null);
+  const [finalRecordingDuration, setFinalRecordingDuration] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [isInitializing, setIsInitializing] = useState(false);
   const [bubblePosition, setBubblePosition] = useState({ x: 100, y: 100 });
@@ -115,6 +117,12 @@ function Bubble() {
       setRecording(false); // Set recording to false immediately for UI feedback
       setAudioLevel({ rms: 0, peak: 0, timestamp: 0 });
       
+      // Store final duration and make a COPY of audio data for playback
+      setFinalRecordingDuration(recordingDuration);
+      // Create a separate copy for playback to avoid interfering with transcription
+      const audioDataCopy = pcmData.slice(0);
+      setAudioData(audioDataCopy);
+      
       // Clear duration timer
       if (durationInterval.current) {
         clearInterval(durationInterval.current);
@@ -124,7 +132,7 @@ function Bubble() {
       // Show processing state
       setIsProcessing(true);
       
-      // Send PCM data to main process for transcription
+      // Send ORIGINAL PCM data to main process for transcription (untouched)
       await window.app.stopRecording(pcmData);
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Failed to stop recording';
@@ -170,6 +178,8 @@ function Bubble() {
 
   const closeTranscript = () => {
     setTranscript("");
+    setAudioData(null);
+    setFinalRecordingDuration(0);
   };
 
   return (
@@ -225,6 +235,8 @@ function Bubble() {
             y: bubblePosition.y + 140
           }}
           onClose={closeTranscript}
+          audioData={audioData || undefined}
+          recordingDuration={finalRecordingDuration}
         />
       )}
     </>
