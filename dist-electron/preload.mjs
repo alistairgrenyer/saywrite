@@ -32,26 +32,5 @@ electron.contextBridge.exposeInMainWorld("app", {
   },
   onSTTError(callback) {
     electron.ipcRenderer.on("stt:error", (_, error) => callback(error));
-  },
-  async login(request) {
-    return electron.ipcRenderer.invoke("api:login", request);
-  },
-  async logout() {
-    return electron.ipcRenderer.invoke("api:logout");
-  },
-  async getAuthState() {
-    return electron.ipcRenderer.invoke("api:getAuthState");
-  },
-  async transcribe(audioBlob, language) {
-    return electron.ipcRenderer.invoke("api:transcribe", audioBlob, language);
-  },
-  async rewrite(request) {
-    return electron.ipcRenderer.invoke("api:rewrite", request);
-  },
-  onAuthExpired(callback) {
-    electron.ipcRenderer.on("auth:expired", callback);
-  },
-  removeAuthExpiredListener(callback) {
-    electron.ipcRenderer.removeListener("auth:expired", callback);
   }
 });
