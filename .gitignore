@@ -17,8 +17,18 @@ dist-ssr
 !.vscode/extensions.json
 .idea
 .DS_Store
+
+# Visual Studio Code
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+
+# TypeScript build artifacts
+*.tsbuildinfo
+vite.config.js
+vite.config.d.ts
+
+# Electron
+dist-electron/

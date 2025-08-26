@@ -1,6 +1,7 @@
 import { ipcRenderer, contextBridge } from 'electron'
 import { LoginRequest, AuthState } from '../src/core/models/auth.js'
 import { RewriteRequest, RewriteResponse } from '../src/core/models/rewrite.js'
+import { TranscribeResponse } from '../src/core/ports/ApiClient.js'
 
 // --------- Expose some API to the Renderer process ---------
 contextBridge.exposeInMainWorld('ipcRenderer', {
@@ -27,13 +28,24 @@ contextBridge.exposeInMainWorld('ipcRenderer', {
 
 // --------- Expose typed API surface ---------
 contextBridge.exposeInMainWorld('app', {
-  async login(request: LoginRequest): Promise<{ ok: true } | { ok: false; error: string }> {
-    try {
-      await ipcRenderer.invoke('api:login', request)
-      return { ok: true }
-    } catch (error: any) {
-      return { ok: false, error: error.message || 'Login failed' }
-    }
+  startRecording(): void {
+    ipcRenderer.send('recording:start')
+  },
+
+  stopRecording(pcmData: Float32Array): Promise<void> {
+    return ipcRenderer.invoke('recording:stop', pcmData.buffer)
+  },
+
+  onFinal(callback: (text: string) => void): void {
+    ipcRenderer.on('stt:final', (_, text) => callback(text))
+  },
+
+  onSTTError(callback: (error: string) => void): void {
+    ipcRenderer.on('stt:error', (_, error) => callback(error))
+  },
+
+  async login(request: LoginRequest): Promise<{ success: boolean }> {
+    return ipcRenderer.invoke('api:login', request)
   },
 
   async logout(): Promise<void> {
@@ -42,6 +54,10 @@ contextBridge.exposeInMainWorld('app', {
 
   async getAuthState(): Promise<AuthState> {
     return ipcRenderer.invoke('api:getAuthState')
+  },
+
+  async transcribe(audioBlob: Blob, language?: string): Promise<TranscribeResponse> {
+    return ipcRenderer.invoke('api:transcribe', audioBlob, language)
   },
 
   async rewrite(request: RewriteRequest): Promise<RewriteResponse> {

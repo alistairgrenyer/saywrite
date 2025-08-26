@@ -1,15 +1,16 @@
-# SayWrite - Electron App with Authentication & Rewrite API
+# SayWrite - Voice-to-Text Rewriting Assistant
 
-SayWrite is an Electron application that provides on-device speech-to-text (STT) with cloud-based text rewriting capabilities. The app features secure JWT authentication, token storage via OS keychain, and a clean architecture with ports and adapters.
+SayWrite is a modern Electron application that transforms your voice into polished, professional text. Simply speak into the floating bubble interface, and watch as your words are transcribed and intelligently rewritten for any context.
 
-## Features
+## ✨ Features
 
-- **Secure Authentication**: JWT-based login with keychain storage
-- **Rewrite API**: Cloud-based text rewriting with customizable profiles
-- **Developer Tools**: Dev token injection for testing without login
-- **Clean Architecture**: Ports and adapters pattern for maintainability
-- **Type Safety**: Full TypeScript implementation with Zod validation
-- **401 Handling**: Automatic token refresh and re-authentication flow
+- **🎤 Voice Recording**: One-click voice recording with visual feedback
+- **📝 Real-time Transcription**: Speech-to-text powered by cloud APIs
+- **✨ AI Rewriting**: Transform casual speech into professional text
+- **🔐 Secure Authentication**: JWT-based login with keychain storage
+- **🎨 Modern UI**: Beautiful floating bubble interface with smooth animations
+- **📱 Responsive Design**: Works seamlessly on desktop and mobile
+- **🔄 Real-time Feedback**: Visual indicators for recording, processing, and rewriting states
 
 ## Architecture
 
@@ -20,10 +21,11 @@ SayWrite is an Electron application that provides on-device speech-to-text (STT)
 - **IPC Handlers**: Secure communication bridge to renderer process
 
 ### Renderer Process (React)
+- **FloatingBubble**: Main voice recording interface with smooth animations
 - **LoginModal**: User authentication interface
 - **useAuth Hook**: Authentication state management
 - **HostedApiClient**: Adapter implementing ApiClient port
-- **Clean UI**: Modern, responsive interface with loading states
+- **Modern UI**: Floating bubble design with gradient backgrounds and transitions
 
 ### Security Features
 - No tokens stored in renderer process
@@ -57,6 +59,14 @@ SayWrite is an Electron application that provides on-device speech-to-text (STT)
 POST /v1/auth/login
 Body: { email: string, password: string }
 Response: { access_token: string, token_type: "bearer" }
+```
+
+### Transcription
+```typescript
+POST /v1/transcribe
+Headers: { Authorization: "Bearer <token>" }
+Body: FormData with 'audio' file and optional 'language' field
+Response: { text: string }
 ```
 
 ### Rewrite
@@ -110,15 +120,18 @@ src/
 │   └── ports/           # Interface definitions
 ├── adapters/
 │   └── api/             # API client implementations
-├── components/          # React components
+├── components/
+│   ├── FloatingBubble.tsx    # Main voice interface
+│   ├── FloatingBubble.css    # Bubble styling and animations
+│   └── LoginModal.tsx        # Authentication modal
 ├── hooks/               # Custom React hooks
 └── types/               # Global type definitions
 
 electron/
 ├── main/
 │   ├── tokenStore.ts    # Token management
-│   ├── http.ts          # HTTP client
-│   └── api.ts           # API service
+│   ├── http.ts          # HTTP client with FormData support
+│   └── api.ts           # API service with transcription
 ├── main.ts              # Main process entry
 └── preload.ts           # IPC bridge
 ```

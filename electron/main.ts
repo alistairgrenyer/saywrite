@@ -4,6 +4,8 @@ import path from 'node:path'
 import { TokenStore } from './main/tokenStore.js'
 import { HttpClient } from './main/http.js'
 import { ApiService } from './main/api.js'
+import { WhisperService } from './main/whisperService.js'
+import { ConfigService } from './main/config.js'
 import { LoginRequestSchema } from '../src/core/models/auth.js'
 import { RewriteRequestSchema } from '../src/core/models/rewrite.js'
 
@@ -31,16 +33,52 @@ process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL ? path.join(process.env.APP_ROOT, 
 const tokenStore = new TokenStore()
 const httpClient = new HttpClient(tokenStore)
 const apiService = new ApiService(httpClient, tokenStore)
+const whisperService = new WhisperService()
+const configService = new ConfigService()
 
 let win: BrowserWindow | null
 
+// Register IPC handlers immediately
+// Recording handlers
+ipcMain.on('recording:start', () => {
+  console.log('Recording started')
+})
+
+ipcMain.handle('recording:stop', async (_, pcmF32Buf: ArrayBuffer) => {
+  try {
+    console.log('Recording stopped, processing audio...')
+    const pcmF32 = new Float32Array(pcmF32Buf)
+    const sessionId = `session_${Date.now()}`
+    
+    const result = await whisperService.transcribeFromPCM(pcmF32, sessionId)
+    win?.webContents.send('stt:final', result.text)
+    
+    return result
+  } catch (error: any) {
+    console.error('Transcription failed:', error)
+    win?.webContents.send('stt:error', error.message || 'Transcription failed')
+    throw error
+  }
+})
+
 function createWindow() {
   win = new BrowserWindow({
-    icon: path.join(process.env.VITE_PUBLIC, 'electron-vite.svg'),
+    width: 300,
+    height: 200,
+    frame: false,
+    transparent: true,
+    alwaysOnTop: true,
+    resizable: false,
+    skipTaskbar: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.mjs'),
+      contextIsolation: true,
+      nodeIntegration: false,
     },
   })
+
+  // Ensure it stays on top even above fullscreen apps
+  win.setAlwaysOnTop(true, "screen-saver")
 
   // Set main window reference for HTTP client
   httpClient.setMainWindow(win)
@@ -48,6 +86,7 @@ function createWindow() {
   // Test active push message to Renderer-process.
   win.webContents.on('did-finish-load', () => {
     win?.webContents.send('main-process-message', (new Date).toLocaleString())
+    validateWhisperOnReady()
   })
 
   if (VITE_DEV_SERVER_URL) {
@@ -77,6 +116,23 @@ ipcMain.handle('api:getAuthState', async () => {
   return await apiService.getAuthState()
 })
 
+// Validate whisper files after window is created
+function validateWhisperOnReady() {
+  const validation = configService.validateWhisperFiles()
+  if (!validation.valid) {
+    console.error('Whisper validation failed:', validation.errors)
+    win?.webContents.send('stt:error', validation.errors.join('\n'))
+  }
+}
+
+ipcMain.handle('api:transcribe', async (_, audioBlob, language) => {
+  try {
+    return await apiService.transcribe(audioBlob, language)
+  } catch (error: any) {
+    throw new Error(error.message || 'Transcription failed')
+  }
+})
+
 ipcMain.handle('api:rewrite', async (_, request) => {
   try {
     const validatedRequest = RewriteRequestSchema.parse(request)
@@ -92,7 +148,6 @@ ipcMain.handle('api:rewrite', async (_, request) => {
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit()
-    win = null
   }
 })
 

@@ -1,12 +1,12 @@
-import { ApiClient } from '../../core/ports/ApiClient.js';
+import { ApiClient, TranscribeResponse } from '../../core/ports/ApiClient.js';
 import { LoginRequest, LoginResponse, AuthState } from '../../core/models/auth.js';
 import { RewriteRequest, RewriteResponse } from '../../core/models/rewrite.js';
 
 export class HostedApiClient implements ApiClient {
   async login(request: LoginRequest): Promise<LoginResponse> {
     const result = await window.app.login(request);
-    if (!result.ok) {
-      throw new Error(result.error);
+    if (!result.success) {
+      throw new Error('Login failed');
     }
     // Return a mock response since the actual token is stored in main process
     return { access_token: 'stored-in-main', token_type: 'bearer' };
@@ -18,6 +18,10 @@ export class HostedApiClient implements ApiClient {
 
   async getAuthState(): Promise<AuthState> {
     return await window.app.getAuthState();
+  }
+
+  async transcribe(audioBlob: Blob, language?: string): Promise<TranscribeResponse> {
+    return await window.app.transcribe(audioBlob, language);
   }
 
   async rewrite(request: RewriteRequest): Promise<RewriteResponse> {

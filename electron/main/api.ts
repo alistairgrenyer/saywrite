@@ -12,6 +12,7 @@ import {
   RewriteRequestSchema, 
   RewriteResponseSchema 
 } from '../../src/core/models/rewrite.js';
+import { TranscribeResponse } from '../../src/core/ports/ApiClient.js';
 import { AxiosError } from 'axios';
 
 export interface ApiError {
@@ -54,6 +55,24 @@ export class ApiService {
       await this.tokenStore.clearToken();
     } catch (error) {
       throw this.handleApiError(error, 'LOGOUT_FAILED');
+    }
+  }
+
+  async transcribe(audioBlob: Blob, language?: string): Promise<TranscribeResponse> {
+    try {
+      // Create FormData for file upload
+      const formData = new FormData();
+      formData.append('audio', audioBlob, 'recording.wav');
+      if (language) {
+        formData.append('language', language);
+      }
+      
+      // Make API call
+      const response = await this.http.postFormData<TranscribeResponse>('/v1/transcribe', formData);
+      
+      return response;
+    } catch (error) {
+      throw this.handleApiError(error, 'TRANSCRIBE_FAILED');
     }
   }
 

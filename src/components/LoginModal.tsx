@@ -3,7 +3,7 @@ import { LoginRequest } from '../core/models/auth.js';
 
 interface LoginModalProps {
   isOpen: boolean;
-  onClose: () => void;
+  onClose?: () => void;
   onLogin: (request: LoginRequest) => Promise<void>;
   error?: string;
   isLoading?: boolean;
@@ -11,7 +11,7 @@ interface LoginModalProps {
 
 export const LoginModal: React.FC<LoginModalProps> = ({
   isOpen,
-  onClose,
+  onClose: _onClose,
   onLogin,
   error,
   isLoading = false

@@ -21,19 +21,29 @@ electron.contextBridge.exposeInMainWorld("ipcRenderer", {
   // ...
 });
 electron.contextBridge.exposeInMainWorld("app", {
+  startRecording() {
+    electron.ipcRenderer.send("recording:start");
+  },
+  stopRecording(pcmData) {
+    return electron.ipcRenderer.invoke("recording:stop", pcmData.buffer);
+  },
+  onFinal(callback) {
+    electron.ipcRenderer.on("stt:final", (_, text) => callback(text));
+  },
+  onSTTError(callback) {
+    electron.ipcRenderer.on("stt:error", (_, error) => callback(error));
+  },
   async login(request) {
-    try {
-      await electron.ipcRenderer.invoke("api:login", request);
-      return { ok: true };
-    } catch (error) {
-      return { ok: false, error: error.message || "Login failed" };
-    }
+    return electron.ipcRenderer.invoke("api:login", request);
   },
   async logout() {
     return electron.ipcRenderer.invoke("api:logout");
   },
   async getAuthState() {
     return electron.ipcRenderer.invoke("api:getAuthState");
+  },
+  async transcribe(audioBlob, language) {
+    return electron.ipcRenderer.invoke("api:transcribe", audioBlob, language);
   },
   async rewrite(request) {
     return electron.ipcRenderer.invoke("api:rewrite", request);
