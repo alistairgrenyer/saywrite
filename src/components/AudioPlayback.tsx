@@ -152,11 +152,49 @@ export function AudioPlayback({ audioData, duration }: AudioPlaybackProps) {
     // Show paused position if we have a current time set
     drawWaveform(currentTime > 0);
 
-    // Draw progress overlay during playback
+    // Draw progress overlay during playback - optimized for smoothness
     const drawProgress = () => {
       if (!audioRef.current || !audioRef.current.duration) return;
       
-      drawWaveform(true); // Always show position during playback
+      const progress = audioRef.current.currentTime / audioRef.current.duration;
+      const progressWidth = width * progress;
+      
+      // Only redraw the progress overlay, not the entire waveform
+      ctx.clearRect(0, 0, width, height);
+      
+      // Redraw waveform bars with progress coloring
+      const samplesPerPixel = Math.floor(pcmArray.length / width);
+      const barWidth = Math.max(1, width / Math.min(width, 200));
+      
+      for (let x = 0; x < width; x += barWidth) {
+        const startSample = Math.floor(x * samplesPerPixel);
+        const endSample = Math.min(startSample + samplesPerPixel * barWidth, pcmArray.length);
+        
+        let max = 0;
+        for (let i = startSample; i < endSample; i++) {
+          max = Math.max(max, Math.abs(pcmArray[i]));
+        }
+        
+        const normalizedHeight = (max / 32768) * (height * 0.8);
+        const barHeight = Math.max(2, normalizedHeight);
+        const y = (height - barHeight) / 2;
+        
+        // Smooth color transition based on progress
+        if (x < progressWidth) {
+          ctx.fillStyle = '#34c759'; // Played portion - green
+        } else {
+          ctx.fillStyle = '#666'; // Unplayed portion - gray
+        }
+        ctx.fillRect(x, y, Math.max(1, barWidth - 1), barHeight);
+      }
+      
+      // Draw smooth playhead line
+      ctx.strokeStyle = '#34c759';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(progressWidth, 0);
+      ctx.lineTo(progressWidth, height);
+      ctx.stroke();
       
       if (isPlaying) {
         animationRef.current = requestAnimationFrame(drawProgress);
