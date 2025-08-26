@@ -340,7 +340,11 @@ export function AudioPlayback({ audioData, duration }: AudioPlaybackProps) {
           onClick={togglePlayback}
           disabled={!audioUrl}
         >
-          {isPlaying ? '⏸️' : '▶️'}
+          {isPlaying ? (
+            <span style={{ color: '#ff3b30' }}>II</span>
+          ) : (
+            <span style={{ color: '#34c759' }}>▶</span>
+          )}
         </button>
         
         <div className="waveform-container" onClick={handleWaveformClick}>
