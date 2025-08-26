@@ -10,13 +10,8 @@ export interface WhisperConfig {
 }
 
 export class ConfigService {
-  private projectRoot: string;
-  
   constructor() {
-    // In dev, use the project root; in production, use resources path
-    this.projectRoot = app.isPackaged 
-      ? process.resourcesPath 
-      : process.cwd();
+    // Configuration service for whisper paths and validation
   }
 
   getWhisperConfig(): WhisperConfig {

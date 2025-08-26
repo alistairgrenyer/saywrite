@@ -20659,8 +20659,6 @@ class ApiService {
 }
 class ConfigService {
   constructor() {
-    __publicField(this, "projectRoot");
-    this.projectRoot = app.isPackaged ? process.resourcesPath : process.cwd();
   }
   getWhisperConfig() {
     const isDev = process.env.NODE_ENV === "development";
@@ -20769,7 +20767,16 @@ class WhisperService {
         config.language,
         "--no-timestamps",
         "--print-special",
-        "0",
+        "false",
+        "--suppress-nst",
+        "--temperature",
+        "0.0",
+        "--best-of",
+        "1",
+        "--beam-size",
+        "1",
+        "--word-thold",
+        "0.01",
         "--threads",
         config.threads.toString()
       ];
@@ -20782,12 +20789,19 @@ class WhisperService {
       let stdout = "";
       let stderr = "";
       (_a = whisperProcess.stdout) == null ? void 0 : _a.on("data", (data) => {
-        stdout += data.toString();
+        const chunk = data.toString();
+        console.log("Whisper stdout:", chunk);
+        stdout += chunk;
       });
       (_b = whisperProcess.stderr) == null ? void 0 : _b.on("data", (data) => {
-        stderr += data.toString();
+        const chunk = data.toString();
+        console.log("Whisper stderr:", chunk);
+        stderr += chunk;
       });
       whisperProcess.on("close", (code) => {
+        console.log(`Whisper process closed with code: ${code}`);
+        console.log("Final stdout:", stdout);
+        console.log("Final stderr:", stderr);
         if (code !== 0) {
           reject(new Error(`Whisper process failed with code ${code}
 Stderr: ${stderr}
@@ -20797,6 +20811,7 @@ Stdout: ${stdout}`));
         try {
           const lines = stdout.split("\n").filter((line) => line.trim());
           const transcriptionText = lines.join(" ").trim();
+          console.log("Parsed transcription:", transcriptionText);
           resolve({
             text: transcriptionText,
             confidence: void 0,
@@ -20851,14 +20866,19 @@ ipcMain.handle("recording:stop", async (_, pcmF32Buf) => {
   }
 });
 function createWindow() {
+  const isDev = process.env.NODE_ENV === "development";
   win = new BrowserWindow({
-    width: 300,
-    height: 200,
-    frame: false,
-    transparent: true,
+    width: isDev ? 500 : 300,
+    height: isDev ? 400 : 200,
+    frame: isDev,
+    // Show frame in dev for easier debugging
+    transparent: !isDev,
+    // Only transparent in production
     alwaysOnTop: true,
-    resizable: false,
-    skipTaskbar: true,
+    resizable: isDev,
+    // Allow resizing in dev
+    skipTaskbar: !isDev,
+    // Show in taskbar during dev
     webPreferences: {
       preload: path$1.join(__dirname, "preload.mjs"),
       contextIsolation: true,

@@ -50,7 +50,12 @@ export class WhisperService {
         '-f', wavPath,
         '--language', config.language,
         '--no-timestamps',
-        '--print-special', '0',
+        '--print-special', 'false',
+        '--suppress-nst',
+        '--temperature', '0.0',
+        '--best-of', '1',
+        '--beam-size', '1',
+        '--word-thold', '0.01',
         '--threads', config.threads.toString()
       ];
 
@@ -65,14 +70,22 @@ export class WhisperService {
       let stderr = '';
 
       whisperProcess.stdout?.on('data', (data) => {
-        stdout += data.toString();
+        const chunk = data.toString();
+        console.log('Whisper stdout:', chunk);
+        stdout += chunk;
       });
 
       whisperProcess.stderr?.on('data', (data) => {
-        stderr += data.toString();
+        const chunk = data.toString();
+        console.log('Whisper stderr:', chunk);
+        stderr += chunk;
       });
 
       whisperProcess.on('close', (code) => {
+        console.log(`Whisper process closed with code: ${code}`);
+        console.log('Final stdout:', stdout);
+        console.log('Final stderr:', stderr);
+        
         if (code !== 0) {
           reject(new Error(`Whisper process failed with code ${code}\nStderr: ${stderr}\nStdout: ${stdout}`));
           return;
@@ -82,6 +95,8 @@ export class WhisperService {
           // Parse stdout for transcription text
           const lines = stdout.split('\n').filter(line => line.trim());
           const transcriptionText = lines.join(' ').trim();
+          
+          console.log('Parsed transcription:', transcriptionText);
           
           resolve({
             text: transcriptionText,

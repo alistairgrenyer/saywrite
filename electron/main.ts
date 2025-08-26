@@ -62,14 +62,16 @@ ipcMain.handle('recording:stop', async (_, pcmF32Buf: ArrayBuffer) => {
 })
 
 function createWindow() {
+  const isDev = process.env.NODE_ENV === 'development';
+  
   win = new BrowserWindow({
-    width: 300,
-    height: 200,
-    frame: false,
-    transparent: true,
+    width: isDev ? 500 : 300,
+    height: isDev ? 400 : 200,
+    frame: isDev, // Show frame in dev for easier debugging
+    transparent: !isDev, // Only transparent in production
     alwaysOnTop: true,
-    resizable: false,
-    skipTaskbar: true,
+    resizable: isDev, // Allow resizing in dev
+    skipTaskbar: !isDev, // Show in taskbar during dev
     webPreferences: {
       preload: path.join(__dirname, 'preload.mjs'),
       contextIsolation: true,
