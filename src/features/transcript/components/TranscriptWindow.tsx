@@ -3,8 +3,8 @@
  * Moved from src/components/TranscriptWindow.tsx
  */
 import { useState, useEffect } from 'react';
+import { Paper, Textarea, ActionIcon, Text, Loader, Group } from '@mantine/core';
 import { AudioPlayback } from './AudioPlayback';
-import { GlassPanel } from '@shared/components/GlassPanel';
 import { Position } from '@shared/lib/types';
 import { useRelativePosition } from '@shared/hooks/useRelativePosition';
 import { dimensions, zIndex, typography, colors } from '@shared/lib/design-tokens';
@@ -47,56 +47,84 @@ export function TranscriptWindow({
   if (!text && !isProcessing) return null;
 
   return (
-    <GlassPanel
+    <Paper
       className="transcript-window"
-      animate={true}
       style={{
         position: 'fixed',
         left: `${position.x}px`,
         top: `${position.y}px`,
         zIndex: zIndex.modal,
-        maxWidth: dimensions.panel.maxWidth,
-        minWidth: dimensions.panel.minWidth,
-        minHeight: dimensions.panel.minHeight,
+        width: '500px',
+        height: '400px',
         resize: 'both',
-        overflow: 'auto'
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column'
       }}
     >
-      <div className="transcript-content">
-        <div className="transcript-header">
-          <span className="text-primary" style={{ fontSize: typography.fontSize.sm, fontWeight: typography.fontWeight.semibold, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Transcription</span>
-          <button className="glass-button" onClick={onClose} style={{ width: dimensions.button.small, height: dimensions.button.small, fontSize: typography.fontSize.lg, color: colors.secondary }}>×</button>
-        </div>
-        
-        {!isProcessing && audioData && (
+      {/* Header */}
+      <Group justify="space-between" align="center" p="md" style={{ 
+        borderBottom: `1px solid ${colors.muted}20`,
+        flexShrink: 0
+      }}>
+        <Text 
+          size="sm" 
+          fw={600} 
+          tt="uppercase" 
+          style={{ letterSpacing: '0.5px', color: colors.primary }}
+        >
+          Transcription
+        </Text>
+        <ActionIcon 
+          variant="subtle" 
+          onClick={onClose}
+          size="sm"
+          style={{ color: colors.secondary }}
+        >
+          ×
+        </ActionIcon>
+      </Group>
+      
+      {/* Audio Playback */}
+      {!isProcessing && audioData && (
+        <div style={{ padding: '12px 16px', borderBottom: `1px solid ${colors.muted}20`, flexShrink: 0 }}>
           <AudioPlayback
             audioData={audioData}
             duration={recordingDuration}
           />
-        )}
-        
-        <div className="transcript-text">
-          {isProcessing ? (
-            <div className="processing-indicator">
-              <span>Processing</span>
-              <div className="dots">
-                <span>.</span>
-                <span>.</span>
-                <span>.</span>
-              </div>
-            </div>
-          ) : (
-            <textarea
-              className="glass-input"
-              value={editableText}
-              onChange={(e) => setEditableText(e.target.value)}
-              placeholder="Your transcription will appear here..."
-              rows={6}
-              style={{ width: '100%', height: '100%', minHeight: '120px', resize: 'none', fontSize: typography.fontSize.base }}
-            />
-          )}
         </div>
+      )}
+      
+      {/* Content Area */}
+      <div style={{ flex: 1, padding: '16px', overflow: 'hidden' }}>
+        {isProcessing ? (
+          <Group gap="xs" align="center" style={{ 
+            justifyContent: 'center', 
+            height: '100%',
+            flexDirection: 'column'
+          }}>
+            <Loader size="md" />
+            <Text size="sm" style={{ color: colors.secondary }}>Processing audio...</Text>
+          </Group>
+        ) : (
+          <Textarea
+            value={editableText}
+            onChange={(e) => setEditableText(e.currentTarget.value)}
+            placeholder="Your transcription will appear here..."
+            style={{ 
+              fontSize: typography.fontSize.base,
+              height: '100%',
+              resize: 'none'
+            }}
+            styles={{
+              input: {
+                height: '100%',
+                minHeight: 'unset'
+              }
+            }}
+          />
+        )}
       </div>
-    </GlassPanel>
+    </Paper>
   );
 }
