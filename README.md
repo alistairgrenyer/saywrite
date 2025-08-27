@@ -5,33 +5,47 @@ SayWrite is a modern Electron application that transforms your voice into polish
 ## ✨ Features
 
 - **🎤 Voice Recording**: One-click voice recording with visual feedback
-- **📝 Real-time Transcription**: Speech-to-text powered by cloud APIs
-- **✨ AI Rewriting**: Transform casual speech into professional text
-- **🔐 Secure Authentication**: JWT-based login with keychain storage
-- **🎨 Modern UI**: Beautiful floating bubble interface with smooth animations
-- **📱 Responsive Design**: Works seamlessly on desktop and mobile
-- **🔄 Real-time Feedback**: Visual indicators for recording, processing, and rewriting states
+- **📝 Real-time Transcription**: Speech-to-text powered by Whisper
+- **✨ AI Rewriting**: Transform casual speech into professional text (planned)
+- **⚙️ Settings Management**: Configurable audio, UI, and transcription settings
+- **🎨 Modern UI**: Beautiful glass morphism interface with smooth animations
+- **🔒 Secure Architecture**: Electron security boundaries with context isolation
+- **🔄 Real-time Feedback**: Visual indicators for recording, processing, and transcription states
 
 ## Architecture
 
-### Main Process (Electron)
-- **TokenStore**: Manages JWT tokens with keytar integration and dev overrides
-- **HttpClient**: Axios-based client with auth interceptors and 401 handling
-- **ApiService**: Business logic for login, logout, and rewrite operations
-- **IPC Handlers**: Secure communication bridge to renderer process
+SayWrite follows a **feature-first, layered architecture** that prioritizes maintainability, type safety, and clear separation of concerns.
 
-### Renderer Process (React)
-- **FloatingBubble**: Main voice recording interface with smooth animations
-- **LoginModal**: User authentication interface
-- **useAuth Hook**: Authentication state management
-- **HostedApiClient**: Adapter implementing ApiClient port
-- **Modern UI**: Floating bubble design with gradient backgrounds and transitions
+### Core Principles
+- **Feature-First Organization**: Code organized by business features rather than technical layers
+- **Single Source of Truth**: Each concern has one authoritative location
+- **Composition Over Inheritance**: Favor composable functions and hooks
+- **Typed Boundaries**: TypeScript + Zod for runtime type safety
+- **Electron Security**: Strict security boundaries with context isolation
 
-### Security Features
-- No tokens stored in renderer process
-- All HTTP requests handled in main process
-- Typed IPC surface with Zod validation
-- OS keychain integration for secure token storage
+### Directory Structure
+```
+src/
+├── app/                    # Application shell and orchestration
+│   ├── components/         # App-level UI components
+│   ├── providers/          # Global providers and context
+│   └── shell/              # Main app shell orchestration
+├── features/               # Business features (domain logic)
+│   ├── recorder/           # Audio recording and capture
+│   ├── transcript/         # Speech-to-text results
+│   ├── rewrite/            # AI-powered text enhancement
+│   └── settings/           # Application configuration
+└── shared/                 # Cross-cutting concerns
+    ├── components/         # Reusable UI primitives
+    ├── hooks/              # Cross-feature React hooks
+    └── lib/                # Utilities, types, and services
+```
+
+### Security Architecture
+- **Context Isolation**: `contextIsolation: true` - Renderer cannot access Node.js APIs
+- **Node Integration**: `nodeIntegration: false` - No direct Node.js access in renderer
+- **Preload Script**: All OS/file/process operations go through typed IPC channels
+- **Typed IPC**: All IPC communication uses TypeScript interfaces for type safety
 
 ## Development Setup
 
@@ -49,8 +63,24 @@ SayWrite is a modern Electron application that transforms your voice into polish
 
 3. **Run Development Server**
    ```bash
+   # Start development server with hot reload
    npm run dev
+
+   # Run Electron in development mode
+   npm run electron:dev
    ```
+
+4. **Path Aliases**
+   The project uses TypeScript path aliases for clean imports:
+   - `@/` → `src/`
+   - `@app/` → `src/app/`
+   - `@features/` → `src/features/`
+   - `@shared/` → `src/shared/`
+
+## Documentation
+
+- **[Architecture Guide](docs/ARCHITECTURE.md)**: Detailed architecture overview and design principles
+- **[Development Guide](docs/DEVELOPMENT.md)**: Comprehensive development workflow and guidelines
 
 ## API Contracts
 
@@ -111,30 +141,31 @@ npm run dev -- --dev-token=your-jwt-token-here
 ### Debug Menu (Future)
 A debug menu item will allow JWT injection in development builds.
 
-## File Structure
+## Current Features
 
-```
-src/
-├── core/
-│   ├── models/          # Zod schemas and TypeScript types
-│   └── ports/           # Interface definitions
-├── adapters/
-│   └── api/             # API client implementations
-├── components/
-│   ├── FloatingBubble.tsx    # Main voice interface
-│   ├── FloatingBubble.css    # Bubble styling and animations
-│   └── LoginModal.tsx        # Authentication modal
-├── hooks/               # Custom React hooks
-└── types/               # Global type definitions
+### 🎤 Recorder
+- Real-time audio capture from microphone
+- Visual recording meter with waveform display
+- Audio level monitoring and processing
+- WAV file generation for transcription
 
-electron/
-├── main/
-│   ├── tokenStore.ts    # Token management
-│   ├── http.ts          # HTTP client with FormData support
-│   └── api.ts           # API service with transcription
-├── main.ts              # Main process entry
-└── preload.ts           # IPC bridge
-```
+### 📝 Transcript
+- Speech-to-text using local Whisper integration
+- Editable transcript window with glass morphism UI
+- Audio playback with waveform visualization
+- Processing indicators and error handling
+
+### ⚙️ Settings
+- Audio input device selection
+- UI preferences (opacity, animations)
+- Transcription settings and language options
+- Persistent settings storage
+
+### 🎨 Modern UI
+- Glass morphism design with dark transparency
+- Smooth animations and transitions
+- Draggable floating bubble interface
+- Responsive and accessible components
 
 ## Security Considerations
 

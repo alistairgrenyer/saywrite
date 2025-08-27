@@ -1,7 +1,3 @@
-import Bubble from './components/Bubble'
-
-function App() {
-  return <Bubble />
-}
+import App from '@app/App'
 
 export default App

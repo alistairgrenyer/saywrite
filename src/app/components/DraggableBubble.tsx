@@ -1,29 +1,26 @@
+/**
+ * Draggable bubble component using feature-first architecture
+ */
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { RecordingMeter } from './RecordingMeter';
-import { AudioLevelData } from '../utils/audioCapture';
-import '../styles/shared.css';
-import './Bubble.css';
+import { RecordingMeter, RecordingButton } from '@features/recorder';
+import { RecordingState, Position } from '@shared/lib/types';
+import '@/styles/shared.css';
+import './DraggableBubble.css';
 
 interface DraggableBubbleProps {
-  recording: boolean;
-  isInitializing: boolean;
+  recordingState: RecordingState;
   onToggleRecording: () => void;
-  position: { x: number; y: number };
-  onPositionChange: (position: { x: number; y: number }) => void;
-  audioLevel: AudioLevelData;
-  recordingDuration: number;
-  recordingSize: number;
+  onOpenSettings: () => void;
+  position: Position;
+  onPositionChange: (position: Position) => void;
 }
 
 export function DraggableBubble({ 
-  recording, 
-  isInitializing, 
+  recordingState, 
   onToggleRecording, 
+  onOpenSettings,
   position, 
-  onPositionChange,
-  audioLevel,
-  recordingDuration,
-  recordingSize
+  onPositionChange
 }: DraggableBubbleProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
@@ -115,41 +112,31 @@ export function DraggableBubble({
       }}
     >
       <div className="bubble-content">
-        <button
-          onClick={(e) => {
+        <RecordingButton
+          recordingState={recordingState}
+          onToggleRecording={(e?: React.MouseEvent) => {
             // Prevent recording if we just finished dragging
             if (hasDragged) {
-              e.preventDefault();
+              e?.preventDefault();
               return;
             }
             onToggleRecording();
           }}
-          disabled={isInitializing}
-          className={`main-mic-button ${recording ? 'recording' : 'idle'} ${isInitializing ? 'initializing' : ''}`}
-          aria-label={recording ? 'Stop recording' : 'Start recording'}
-        >
-          {recording ? (
-            <div className="recording-indicator">
-              <div className="pulse-ring"></div>
-              <div className="recording-dot"></div>
-            </div>
-          ) : (
-            <div className="mic-icon">
-              {!isInitializing && '🎤'}
-              {isInitializing && '⏳'}
-            </div>
-          )}
-        </button>
+        />
         
-        <button className="settings-button" aria-label="Settings">
+        <button 
+          className="settings-button" 
+          onClick={onOpenSettings}
+          aria-label="Settings"
+        >
           ⚙️
         </button>
         
         <RecordingMeter
-          audioLevel={audioLevel}
-          recordingDuration={recordingDuration}
-          recordingSize={recordingSize}
-          isVisible={recording}
+          audioLevel={recordingState.audioLevel}
+          recordingDuration={recordingState.duration}
+          recordingSize={recordingState.size}
+          isVisible={recordingState.isRecording}
         />
       </div>
     </div>

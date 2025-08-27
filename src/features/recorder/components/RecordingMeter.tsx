@@ -1,6 +1,11 @@
+/**
+ * Recording meter component with waveform visualization
+ * Moved from src/components/RecordingMeter.tsx
+ */
 import React from 'react';
-import { AudioLevelData } from '../utils/audioCapture';
-import '../styles/shared.css';
+import { AudioLevelData } from '@shared/lib/types';
+import { formatDuration, formatFileSize } from '@shared/lib/utils';
+import '@/styles/shared.css';
 import './RecordingMeter.css';
 
 interface RecordingMeterProps {
@@ -17,20 +22,6 @@ export function RecordingMeter({
   isVisible 
 }: RecordingMeterProps) {
   if (!isVisible) return null;
-
-  // Format duration as MM:SS
-  const formatDuration = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
-  
-  // Format file size
-  const formatSize = (bytes: number) => {
-    if (bytes < 1024) return `${bytes} B`;
-    const kb = bytes / 1024;
-    return `${kb.toFixed(1)} KB`;
-  };
   
   // Generate waveform bars based on audio level
   const generateWaveformBars = () => {
@@ -66,7 +57,7 @@ export function RecordingMeter({
       </div>
       <div className="recording-stats">
         <span className="duration">{formatDuration(recordingDuration)}</span>
-        <span className="size">{formatSize(recordingSize)}</span>
+        <span className="size">{formatFileSize(recordingSize)}</span>
       </div>
     </div>
   );

@@ -1,12 +1,18 @@
+/**
+ * Transcript window component with editing capabilities
+ * Moved from src/components/TranscriptWindow.tsx
+ */
 import { useState, useEffect } from 'react';
 import { AudioPlayback } from './AudioPlayback';
-import '../styles/shared.css';
+import { GlassPanel } from '@shared/components/GlassPanel';
+import { Position } from '@shared/lib/types';
+import '@/styles/shared.css';
 import './TranscriptWindow.css';
 
 interface TranscriptWindowProps {
   text: string;
   isProcessing?: boolean;
-  position: { x: number; y: number };
+  position: Position;
   onClose: () => void;
   audioData?: ArrayBuffer;
   recordingDuration?: number;
@@ -28,11 +34,13 @@ export function TranscriptWindow({
       setEditableText(text);
     }
   }, [text, editableText]);
+
   if (!text && !isProcessing) return null;
 
   return (
-    <div 
-      className="glass-panel animate-slide-up"
+    <GlassPanel
+      className="transcript-window"
+      animate={true}
       style={{
         position: 'fixed',
         left: `${position.x}px`,
@@ -80,6 +88,6 @@ export function TranscriptWindow({
           )}
         </div>
       </div>
-    </div>
+    </GlassPanel>
   );
 }

@@ -1,5 +1,10 @@
+/**
+ * Audio playback component with waveform visualization
+ * Moved from src/components/AudioPlayback.tsx
+ */
 import React, { useRef, useEffect, useState } from 'react';
-import '../styles/shared.css';
+import { formatDuration } from '@shared/lib/utils';
+import '@/styles/shared.css';
 import './AudioPlayback.css';
 
 interface AudioPlaybackProps {
@@ -311,12 +316,6 @@ export function AudioPlayback({ audioData, duration }: AudioPlaybackProps) {
     }
   };
 
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
-
   return (
     <div className="audio-playback">
       {audioUrl && (
@@ -359,9 +358,9 @@ export function AudioPlayback({ audioData, duration }: AudioPlaybackProps) {
         </div>
         
         <div className="time-display">
-          <span className="text-secondary">{formatTime(currentTime)}</span>
+          <span className="text-secondary">{formatDuration(currentTime)}</span>
           <span className="text-muted">/</span>
-          <span className="text-secondary">{formatTime(duration)}</span>
+          <span className="text-secondary">{formatDuration(duration)}</span>
         </div>
       </div>
     </div>
