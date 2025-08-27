@@ -34,4 +34,4 @@ vite.config.d.ts
 dist-electron/
 
 # Whisper
-.whisper/models/*
+whisper/models/*
