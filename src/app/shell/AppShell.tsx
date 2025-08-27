@@ -85,6 +85,16 @@ export function AppShell() {
     }
   }, [clearError, recordingState.isRecording, startRecording, stopRecording]);
 
+  const handleExit = useCallback(() => {
+    // Close the application via Electron IPC
+    if ((window as any).electronAPI?.closeApp) {
+      (window as any).electronAPI.closeApp();
+    } else {
+      // Fallback for development/web environment
+      window.close();
+    }
+  }, []);
+
   return (
     <>
       {/* Global keyboard handler */}
@@ -106,6 +116,7 @@ export function AppShell() {
           recordingState={recordingState}
           onToggleRecording={handleToggleRecording}
           onOpenSettings={() => setShowSettings(true)}
+          onExit={handleExit}
           position={bubblePosition}
           onPositionChange={setBubblePosition}
         />

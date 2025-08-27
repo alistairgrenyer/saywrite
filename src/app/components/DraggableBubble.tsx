@@ -3,6 +3,7 @@
  */
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { RecordingButton, RecordingMeter } from '@features/recorder';
+import { ContextMenu } from '@shared/components/ContextMenu';
 import { Position, RecordingState } from '@shared/lib/types';
 import { zIndex } from '@shared/lib/design-tokens';
 import '@/styles/shared.css';
@@ -12,6 +13,7 @@ interface DraggableBubbleProps {
   recordingState: RecordingState;
   onToggleRecording: () => void;
   onOpenSettings: () => void;
+  onExit: () => void;
   position: Position;
   onPositionChange: (position: Position) => void;
 }
@@ -20,12 +22,18 @@ export function DraggableBubble({
   recordingState, 
   onToggleRecording, 
   onOpenSettings,
+  onExit,
   position, 
   onPositionChange
 }: DraggableBubbleProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [hasDragged, setHasDragged] = useState(false);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; visible: boolean }>({
+    x: 0,
+    y: 0,
+    visible: false
+  });
   const bubbleRef = useRef<HTMLDivElement>(null);
   const animationRef = useRef<number>();
 
@@ -76,6 +84,19 @@ export function DraggableBubble({
     }
   }, []);
 
+  const handleContextMenu = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setContextMenu({
+      x: e.clientX,
+      y: e.clientY,
+      visible: true
+    });
+  }, []);
+
+  const handleCloseContextMenu = useCallback(() => {
+    setContextMenu(prev => ({ ...prev, visible: false }));
+  }, []);
+
   useEffect(() => {
     if (isDragging) {
       document.addEventListener('mousemove', handleMouseMove, { passive: true });
@@ -97,50 +118,65 @@ export function DraggableBubble({
     }
   }, [position, isDragging]);
 
+  const contextMenuItems = [
+    {
+      label: 'Settings',
+      icon: '⚙️',
+      onClick: onOpenSettings
+    },
+    {
+      label: 'Exit',
+      icon: '✕',
+      onClick: onExit
+    }
+  ];
+
   return (
-    <div 
-      ref={bubbleRef}
-      className={`draggable-bubble ${isDragging ? 'dragging' : ''}`}
-      onMouseDown={handleMouseDown}
-      style={{
-        position: 'fixed',
-        width: '120px',
-        height: '120px',
-        cursor: isDragging ? 'grabbing' : 'grab',
-        transform: `translate3d(${position.x}px, ${position.y}px, 0)`,
-        willChange: isDragging ? 'transform' : 'auto',
-        zIndex: zIndex.modal + 1,
-        pointerEvents: 'auto'
-      }}
-    >
-      <div className="bubble-content">
-        <RecordingButton
-          recordingState={recordingState}
-          onToggleRecording={(e?: React.MouseEvent) => {
-            // Prevent recording if we just finished dragging
-            if (hasDragged) {
-              e?.preventDefault();
-              return;
-            }
-            onToggleRecording();
-          }}
-        />
-        
-        <button 
-          className="settings-button" 
-          onClick={onOpenSettings}
-          aria-label="Settings"
-        >
-          ⚙️
-        </button>
-        
-        <RecordingMeter
-          audioLevel={recordingState.audioLevel}
-          recordingDuration={recordingState.duration}
-          recordingSize={recordingState.size}
-          isVisible={recordingState.isRecording}
-        />
+    <>
+      <div 
+        ref={bubbleRef}
+        className={`draggable-bubble ${isDragging ? 'dragging' : ''}`}
+        onMouseDown={handleMouseDown}
+        onContextMenu={handleContextMenu}
+        style={{
+          position: 'fixed',
+          width: '120px',
+          height: '120px',
+          cursor: isDragging ? 'grabbing' : 'grab',
+          transform: `translate3d(${position.x}px, ${position.y}px, 0)`,
+          willChange: isDragging ? 'transform' : 'auto',
+          zIndex: zIndex.bubble,
+          pointerEvents: 'auto'
+        }}
+      >
+        <div className="bubble-content">
+          <RecordingButton
+            recordingState={recordingState}
+            onToggleRecording={(e?: React.MouseEvent) => {
+              // Prevent recording if we just finished dragging
+              if (hasDragged) {
+                e?.preventDefault();
+                return;
+              }
+              onToggleRecording();
+            }}
+          />
+          
+          <RecordingMeter
+            audioLevel={recordingState.audioLevel}
+            recordingDuration={recordingState.duration}
+            recordingSize={recordingState.size}
+            isVisible={recordingState.isRecording}
+          />
+        </div>
       </div>
-    </div>
+
+      <ContextMenu
+        items={contextMenuItems}
+        position={{ x: contextMenu.x, y: contextMenu.y }}
+        isVisible={contextMenu.visible}
+        onClose={handleCloseContextMenu}
+      />
+    </>
   );
 }
