@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
+import '../styles/shared.css';
 import './AudioPlayback.css';
 
 interface AudioPlaybackProps {
@@ -336,9 +337,10 @@ export function AudioPlayback({ audioData, duration }: AudioPlaybackProps) {
       
       <div className="playback-header">
         <button 
-          className="play-button"
+          className="glass-button"
           onClick={togglePlayback}
           disabled={!audioUrl}
+          style={{ width: '48px', height: '48px', fontSize: '18px' }}
         >
           {isPlaying ? (
             <span style={{ color: '#ff3b30' }}>II</span>
@@ -357,9 +359,9 @@ export function AudioPlayback({ audioData, duration }: AudioPlaybackProps) {
         </div>
         
         <div className="time-display">
-          <span>{formatTime(currentTime)}</span>
-          <span className="separator">/</span>
-          <span>{formatTime(duration)}</span>
+          <span className="text-secondary">{formatTime(currentTime)}</span>
+          <span className="text-muted">/</span>
+          <span className="text-secondary">{formatTime(duration)}</span>
         </div>
       </div>
     </div>

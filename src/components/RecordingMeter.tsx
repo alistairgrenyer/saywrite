@@ -1,4 +1,6 @@
+import React from 'react';
 import { AudioLevelData } from '../utils/audioCapture';
+import '../styles/shared.css';
 import './RecordingMeter.css';
 
 interface RecordingMeterProps {

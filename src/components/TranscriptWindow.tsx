@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { AudioPlayback } from './AudioPlayback';
+import '../styles/shared.css';
 import './TranscriptWindow.css';
 
 interface TranscriptWindowProps {
@@ -31,18 +32,23 @@ export function TranscriptWindow({
 
   return (
     <div 
-      className="transcript-window"
+      className="glass-panel animate-slide-up"
       style={{
         position: 'fixed',
         left: `${position.x}px`,
         top: `${position.y}px`,
-        zIndex: 1000
+        zIndex: 1000,
+        maxWidth: '600px',
+        minWidth: '320px',
+        minHeight: '200px',
+        resize: 'both',
+        overflow: 'auto'
       }}
     >
       <div className="transcript-content">
         <div className="transcript-header">
-          <span className="transcript-title">Transcription</span>
-          <button className="transcript-close" onClick={onClose}>×</button>
+          <span className="text-primary" style={{ fontSize: '12px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Transcription</span>
+          <button className="glass-button" onClick={onClose} style={{ width: '20px', height: '20px', fontSize: '18px', color: 'rgba(255, 255, 255, 0.7)' }}>×</button>
         </div>
         
         {!isProcessing && audioData && (
@@ -64,11 +70,12 @@ export function TranscriptWindow({
             </div>
           ) : (
             <textarea
-              className="editable-transcript"
+              className="glass-input"
               value={editableText}
               onChange={(e) => setEditableText(e.target.value)}
               placeholder="Your transcription will appear here..."
               rows={6}
+              style={{ width: '100%', height: '100%', minHeight: '120px', resize: 'none' }}
             />
           )}
         </div>

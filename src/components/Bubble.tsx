@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { AudioCapture, AudioLevelData } from '../utils/audioCapture';
 import { DraggableBubble } from './DraggableBubble';
 import { TranscriptWindow } from './TranscriptWindow';
+import '../styles/shared.css';
 import './Bubble.css';
 
 function Bubble() {

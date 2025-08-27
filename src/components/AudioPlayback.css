@@ -12,30 +12,7 @@
   gap: 12px;
 }
 
-.play-button {
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 50%;
-  width: 48px;
-  height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-size: 18px;
-  transition: all 0.2s ease;
-  flex-shrink: 0;
-}
-
-.play-button:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.4);
-}
-
-.play-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
+/* Play button styling moved to shared.css glass-button class */
 
 .time-display {
   display: flex;

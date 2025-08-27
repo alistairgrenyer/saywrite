@@ -1,7 +1,8 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { AudioLevelData } from '../utils/audioCapture';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { RecordingMeter } from './RecordingMeter';
-import './DraggableBubble.css';
+import { AudioLevelData } from '../utils/audioCapture';
+import '../styles/shared.css';
+import './Bubble.css';
 
 interface DraggableBubbleProps {
   recording: boolean;
