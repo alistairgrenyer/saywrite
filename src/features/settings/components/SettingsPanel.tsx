@@ -4,6 +4,9 @@
 import { useState } from 'react';
 import { GlassPanel } from '@shared/components/GlassPanel';
 import { AppSettings } from '../hooks/useSettings';
+import { Position } from '@shared/lib/types';
+import { useRelativePosition } from '@shared/hooks/useRelativePosition';
+import { dimensions, zIndex } from '@shared/lib/design-tokens';
 import '@/styles/shared.css';
 import './SettingsPanel.css';
 
@@ -12,10 +15,22 @@ interface SettingsPanelProps {
   onUpdateSettings: (settings: Partial<AppSettings>) => void;
   onClose: () => void;
   isVisible: boolean;
+  bubblePosition: Position;
 }
 
-export function SettingsPanel({ settings, onUpdateSettings, onClose, isVisible }: SettingsPanelProps) {
+export function SettingsPanel({ settings, onUpdateSettings, onClose, isVisible, bubblePosition }: SettingsPanelProps) {
   const [activeTab, setActiveTab] = useState<'audio' | 'ui' | 'transcription'>('audio');
+
+  // Use relative positioning based on bubble position
+  const { position } = useRelativePosition({
+    parentPosition: bubblePosition,
+    componentType: 'settings',
+    elementSize: { 
+      width: parseInt(dimensions.panel.minWidth), 
+      height: parseInt(dimensions.panel.minHeight) 
+    },
+    enabled: isVisible,
+  });
 
   if (!isVisible) return null;
 
@@ -199,13 +214,12 @@ export function SettingsPanel({ settings, onUpdateSettings, onClose, isVisible }
       animate={true}
       style={{
         position: 'fixed',
-        top: '50%',
-        left: '50%',
-        transform: 'translate(-50%, -50%)',
-        zIndex: 1001,
-        width: '500px',
-        maxWidth: '90vw',
-        maxHeight: '80vh'
+        left: `${position.x}px`,
+        top: `${position.y}px`,
+        zIndex: zIndex.modal,
+        width: dimensions.panel.minWidth,
+        maxHeight: '80vh',
+        overflow: 'auto'
       }}
     >
       <div className="settings-content">

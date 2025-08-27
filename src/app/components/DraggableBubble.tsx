@@ -2,8 +2,9 @@
  * Draggable bubble component using feature-first architecture
  */
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { RecordingMeter, RecordingButton } from '@features/recorder';
-import { RecordingState, Position } from '@shared/lib/types';
+import { RecordingButton, RecordingMeter } from '@features/recorder';
+import { Position, RecordingState } from '@shared/lib/types';
+import { zIndex } from '@shared/lib/design-tokens';
 import '@/styles/shared.css';
 import './DraggableBubble.css';
 
@@ -108,6 +109,7 @@ export function DraggableBubble({
         cursor: isDragging ? 'grabbing' : 'grab',
         transform: `translate3d(${position.x}px, ${position.y}px, 0)`,
         willChange: isDragging ? 'transform' : 'auto',
+        zIndex: zIndex.modal + 1,
         pointerEvents: 'auto'
       }}
     >

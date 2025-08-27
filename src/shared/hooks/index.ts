@@ -1,5 +1,6 @@
 /**
  * Shared hooks exports
  */
-export * from './usePosition';
-export * from './useError';
+export { usePosition } from './usePosition';
+export { useError } from './useError';
+export { useRelativePosition } from './useRelativePosition';

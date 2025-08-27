@@ -115,24 +115,18 @@ export function AppShell() {
       {error && (
         <ErrorDisplay
           error={error}
-          position={{
-            x: bubblePosition.x,
-            y: bubblePosition.y + 140
-          }}
+          bubblePosition={bubblePosition}
           onClose={clearError}
           onRetry={error.type === 'audio' ? handleRetryAudio : undefined}
         />
       )}
 
       {/* Transcript window */}
-      {(transcriptState.text || transcriptState.isProcessing) && (
+      {transcriptState.text && (
         <TranscriptWindow
           text={transcriptState.text}
           isProcessing={transcriptState.isProcessing}
-          position={{
-            x: bubblePosition.x,
-            y: bubblePosition.y + 140
-          }}
+          bubblePosition={bubblePosition}
           onClose={clearTranscript}
           audioData={transcriptState.audioData || undefined}
           recordingDuration={transcriptState.recordingDuration}
@@ -145,6 +139,7 @@ export function AppShell() {
         onUpdateSettings={updateSettings}
         onClose={() => setShowSettings(false)}
         isVisible={showSettings}
+        bubblePosition={bubblePosition}
       />
     </>
   );
