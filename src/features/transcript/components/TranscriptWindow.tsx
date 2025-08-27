@@ -53,9 +53,13 @@ export function TranscriptWindow({
         position: 'fixed',
         left: `${position.x}px`,
         top: `${position.y}px`,
-        zIndex: zIndex.modal,
-        width: '500px',
-        height: '400px',
+        zIndex: zIndex.transcript,
+        minWidth: '320px',
+        maxWidth: '90vw',
+        minHeight: '200px',
+        maxHeight: '80vh',
+        width: 'auto',
+        height: 'auto',
         resize: 'both',
         overflow: 'hidden',
         display: 'flex',
@@ -96,7 +100,7 @@ export function TranscriptWindow({
       )}
       
       {/* Content Area */}
-      <div style={{ flex: 1, padding: '16px', overflow: 'hidden' }}>
+      <div style={{ flex: 1, padding: '16px', overflow: 'hidden', display: 'flex', flexDirection: 'column', minHeight: '150px' }}>
         {isProcessing ? (
           <Group gap="xs" align="center" style={{ 
             justifyContent: 'center', 
@@ -111,15 +115,16 @@ export function TranscriptWindow({
             value={editableText}
             onChange={(e) => setEditableText(e.currentTarget.value)}
             placeholder="Your transcription will appear here..."
+            autosize
+            minRows={4}
+            maxRows={20}
             style={{ 
               fontSize: typography.fontSize.base,
-              height: '100%',
-              resize: 'none'
+              flex: 1
             }}
             styles={{
               input: {
-                height: '100%',
-                minHeight: 'unset'
+                resize: 'none'
               }
             }}
           />

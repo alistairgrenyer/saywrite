@@ -178,13 +178,14 @@ export function SettingsPanel({ settings, onUpdateSettings, onClose, isVisible, 
         position: 'fixed',
         left: `${position.x}px`,
         top: `${position.y}px`,
-        zIndex: zIndex.modal,
-        width: '400px',
-        maxHeight: '600px',
+        zIndex: zIndex.settings,
+        minWidth: '320px',
+        maxWidth: '90vw',
+        maxHeight: '80vh',
         overflow: 'hidden'
       }}
     >
-      <Stack gap={0}>
+      <Stack gap={0} style={{ height: '100%' }}>
         {/* Header */}
         <Group justify="space-between" align="center" p="md" style={{ borderBottom: `1px solid ${colors.muted}20` }}>
           <Text 
@@ -205,8 +206,8 @@ export function SettingsPanel({ settings, onUpdateSettings, onClose, isVisible, 
         </Group>
 
         {/* Tabs */}
-        <Tabs value={activeTab} onChange={(value) => setActiveTab(value as 'audio' | 'ui' | 'transcription')} orientation="horizontal">
-          <Tabs.List grow px="md" pt="sm">
+        <Tabs value={activeTab} onChange={(value) => setActiveTab(value as 'audio' | 'ui' | 'transcription')} orientation="horizontal" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+          <Tabs.List grow px="md" pt="sm" style={{ flexShrink: 0 }}>
             {tabs.map((tab) => (
               <Tabs.Tab key={tab.id} value={tab.id} style={{ fontSize: '12px' }}>
                 <Group gap="xs" align="center">
@@ -218,7 +219,7 @@ export function SettingsPanel({ settings, onUpdateSettings, onClose, isVisible, 
           </Tabs.List>
 
           {/* Content Area */}
-          <div style={{ height: '450px', overflow: 'auto' }}>
+          <div style={{ overflow: 'auto', flex: 1, minHeight: 0 }}>
             <Tabs.Panel value="audio" p="md">
               {renderAudioSettings()}
             </Tabs.Panel>

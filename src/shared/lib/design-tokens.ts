@@ -51,7 +51,9 @@ export const zIndex = {
   base: 1,
   dropdown: 10,
   overlay: 100,
-  modal: 1000,
+  settings: 500,
+  transcript: 600,
+  bubble: 1000,
   tooltip: 2000,
   toast: 3000,
 } as const;
