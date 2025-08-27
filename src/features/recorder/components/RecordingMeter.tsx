@@ -2,7 +2,6 @@
  * Recording meter component with waveform visualization
  * Moved from src/components/RecordingMeter.tsx
  */
-import React from 'react';
 import { AudioLevelData } from '@shared/lib/types';
 import { formatDuration, formatFileSize } from '@shared/lib/utils';
 import '@/styles/shared.css';

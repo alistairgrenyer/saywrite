@@ -1,7 +1,6 @@
 /**
  * Error display component for showing user-friendly error messages
  */
-import React from 'react';
 import { AppError, Position } from '@shared/lib/types';
 import '@/styles/shared.css';
 import './ErrorDisplay.css';
