@@ -29,11 +29,42 @@ const whisperService = new WhisperService()
 const configService = new ConfigService()
 
 let win: BrowserWindow | null
+let isOverlayMode = false
 type AuthPayload = {
   accessToken: string
   refreshToken: string
   expiresAt: number
   user?: { id: string; email: string }
+}
+
+// Compute the union bounds of all connected displays (virtual desktop)
+function getVirtualDesktopBounds(): Electron.Rectangle {
+  const displays = screen.getAllDisplays()
+  if (displays.length === 0) {
+    const { bounds } = screen.getPrimaryDisplay()
+    return bounds
+  }
+  let minX = Infinity
+  let minY = Infinity
+  let maxX = -Infinity
+  let maxY = -Infinity
+  for (const d of displays) {
+    const b = d.bounds
+    minX = Math.min(minX, b.x)
+    minY = Math.min(minY, b.y)
+    maxX = Math.max(maxX, b.x + b.width)
+    maxY = Math.max(maxY, b.y + b.height)
+  }
+  return { x: minX, y: minY, width: maxX - minX, height: maxY - minY }
+}
+
+// Update overlay window to cover the current virtual desktop
+function updateOverlayBounds() {
+  if (!win || win.isDestroyed() || !isOverlayMode) return
+  try {
+    const b = getVirtualDesktopBounds()
+    win.setBounds(b, false)
+  } catch {}
 }
 let pendingAuthPayload: AuthPayload | null = null
 
@@ -117,9 +148,10 @@ function createWindow() {
         nodeIntegration: false,
       },
     })
+    isOverlayMode = false
   } else {
-    // Overlay mode: full-screen, transparent, click-through except the bubble
-    const { bounds } = screen.getPrimaryDisplay()
+    // Overlay mode: full-virtual-desktop, transparent, click-through except the bubble
+    const bounds = getVirtualDesktopBounds()
     win = new BrowserWindow({
       x: bounds.x,
       y: bounds.y,
@@ -140,6 +172,7 @@ function createWindow() {
     })
     // Make the window click-through by default; renderer will disable over the bubble
     win.setIgnoreMouseEvents(true, { forward: true })
+    isOverlayMode = true
   }
 
   // Ensure it stays on top even above fullscreen apps
@@ -284,5 +317,13 @@ if (!gotTheLock) {
     }
 
     createWindow()
+
+    // Multi-monitor: keep overlay covering the entire virtual desktop
+    screen.on('display-added', updateOverlayBounds)
+    screen.on('display-removed', updateOverlayBounds)
+    screen.on('display-metrics-changed', updateOverlayBounds)
+
+    // Ensure correct bounds at startup too
+    updateOverlayBounds()
   })
 }
