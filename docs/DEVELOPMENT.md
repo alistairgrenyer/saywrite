@@ -302,7 +302,9 @@ test('should render with data', () => {
 1. **IPC not working**: Check preload script registration
 2. **Import errors**: Verify path aliases in `tsconfig.json` and `vite.config.ts`
 3. **Type errors**: Ensure all IPC methods are properly typed
-4. **Audio issues**: Check microphone permissions and audio context state
+4. **Audio issues**: Check microphone permissions and AudioWorklet registration
+5. **Layout positioning**: Ensure components receive `bubblePosition` prop for positioning
+6. **CSP violations**: Update Content Security Policy for blob URLs and media sources
 
 ### Logging
 
@@ -319,7 +321,9 @@ console.error('[IPC]', 'Failed to communicate with main process:', error);
 
 - Use `useCallback` and `useMemo` for expensive operations
 - Debounce user inputs and API calls
-- Properly dispose of audio contexts and streams
+- Properly dispose of AudioWorklet nodes and audio contexts
+- Use pure functions for layout calculations to avoid re-renders
+- Pass bubble position as props rather than using global state
 - Use React.lazy for code splitting if needed
 
 ### Memory Management

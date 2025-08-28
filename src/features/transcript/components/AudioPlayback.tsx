@@ -256,7 +256,7 @@ export function AudioPlayback({ audioData, duration }: AudioPlaybackProps) {
     setCurrentTime(0);
   };
 
-  const handleWaveformClick = (event: React.MouseEvent<HTMLDivElement>) => {
+  const handleWaveformClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
     if (!audioRef.current || !canvasRef.current) return;
     
     const canvas = canvasRef.current;
@@ -264,10 +264,18 @@ export function AudioPlayback({ audioData, duration }: AudioPlaybackProps) {
     const x = event.clientX - rect.left;
     const progress = x / rect.width;
     
+    // Check if audio is loaded and duration is valid
+    if (!isFinite(audioRef.current.duration) || audioRef.current.duration <= 0) {
+      console.warn('Audio duration not ready for seeking');
+      return;
+    }
+    
     // Seek to clicked position
     const newTime = progress * audioRef.current.duration;
-    audioRef.current.currentTime = newTime;
-    setCurrentTime(newTime);
+    if (isFinite(newTime) && newTime >= 0) {
+      audioRef.current.currentTime = newTime;
+      setCurrentTime(newTime);
+    }
     
     // Force redraw to show new position immediately
     if (!isPlaying && canvasRef.current) {
@@ -348,12 +356,13 @@ export function AudioPlayback({ audioData, duration }: AudioPlaybackProps) {
           )}
         </button>
         
-        <div className="waveform-container" onClick={handleWaveformClick}>
+        <div className="waveform-container">
           <canvas 
             ref={canvasRef}
             className="waveform-canvas"
             width={400}
             height={50}
+            onClick={handleWaveformClick}
           />
         </div>
         

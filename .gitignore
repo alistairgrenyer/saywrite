@@ -31,7 +31,7 @@ vite.config.js
 vite.config.d.ts
 
 # Electron
-dist-electron/
+dist-electron
 
 # Whisper
 whisper/models/*

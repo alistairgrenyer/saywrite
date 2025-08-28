@@ -51,7 +51,10 @@ export const zIndex = {
   base: 1,
   dropdown: 10,
   overlay: 100,
-  modal: 1000,
+  transcript: 500,
+  settings: 600,
+  bubble: 1000,
+  contextMenu: 1100,
   tooltip: 2000,
   toast: 3000,
 } as const;
@@ -196,3 +199,93 @@ export const positioning = {
     return positioning.clampToScreen(relativePos, elementSize);
   },
 };
+
+// Component-specific layout configurations
+export const components = {
+  bubble: {
+    size: { width: 120, height: 120 },
+    styles: {
+      borderRadius: '50%',
+      background: glass.background.dark,
+      border: `2px solid ${glass.border.subtle}`,
+      backdropFilter: glass.blur.medium,
+      boxShadow: glass.shadow.prominent,
+    },
+  },
+  
+  transcript: {
+    size: { width: 400, height: 300 },
+    minSize: { width: 320, height: 200 },
+    maxSize: { width: 600, height: 500 },
+    positioning: {
+      preferredSide: 'right' as const,
+      offset: { x: 20, y: 0 },
+      avoidOverlap: true,
+      stickToScreen: true,
+    },
+    styles: {
+      borderRadius: dimensions.panel.borderRadius,
+      background: glass.background.dark,
+      border: `1px solid ${glass.border.subtle}`,
+      backdropFilter: glass.blur.medium,
+      boxShadow: glass.shadow.prominent,
+      resize: 'both' as const,
+      overflow: 'hidden' as const,
+    },
+  },
+  
+  settings: {
+    size: { width: 320, height: 400 },
+    minSize: { width: 280, height: 300 },
+    maxSize: { width: 400, height: 600 },
+    positioning: {
+      preferredSide: 'left' as const,
+      offset: { x: 20, y: 0 },
+      avoidOverlap: true,
+      stickToScreen: true,
+    },
+    styles: {
+      borderRadius: dimensions.panel.borderRadius,
+      background: glass.background.dark,
+      border: `1px solid ${glass.border.subtle}`,
+      backdropFilter: glass.blur.medium,
+      boxShadow: glass.shadow.prominent,
+    },
+  },
+  
+  contextMenu: {
+    size: { width: 150, height: 80 },
+    minSize: { width: 120, height: 60 },
+    positioning: {
+      preferredSide: 'right' as const,
+      offset: { x: 0, y: 0 },
+      avoidOverlap: false,
+      stickToScreen: true,
+    },
+    styles: {
+      borderRadius: '8px',
+      background: glass.background.dark,
+      border: `1px solid ${glass.border.subtle}`,
+      backdropFilter: glass.blur.medium,
+      boxShadow: glass.shadow.prominent,
+      padding: spacing.xs,
+    },
+  },
+  
+  error: {
+    size: { width: 300, height: 100 },
+    positioning: {
+      preferredSide: 'top' as const,
+      offset: { x: 0, y: 20 },
+      avoidOverlap: true,
+      stickToScreen: true,
+    },
+    styles: {
+      borderRadius: '12px',
+      background: 'rgba(239, 68, 68, 0.95)',
+      border: `1px solid rgba(239, 68, 68, 0.3)`,
+      backdropFilter: glass.blur.medium,
+      boxShadow: glass.shadow.prominent,
+    },
+  },
+} as const;

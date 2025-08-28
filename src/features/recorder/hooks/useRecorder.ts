@@ -2,7 +2,7 @@
  * Hook for managing recording state and audio capture
  */
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { AudioCapture } from '../lib/audioCapture';
+import { AudioWorkletCapture } from '../lib/audioWorklet';
 import { RecordingState, AudioLevelData } from '@shared/lib/types';
 import { ipcClient } from '@shared/lib/ipc-client';
 
@@ -35,7 +35,7 @@ export const useRecorder = ({
     audioLevel: { rms: 0, peak: 0, timestamp: 0 }
   });
 
-  const audioCapture = useRef<AudioCapture | null>(null);
+  const audioCapture = useRef<AudioWorkletCapture | null>(null);
   const recordingStartTime = useRef<number>(0);
   const durationInterval = useRef<NodeJS.Timeout | null>(null);
 
@@ -61,12 +61,12 @@ export const useRecorder = ({
   };
 
   const startRecording = async (): Promise<void> => {
-    // Dispose and recreate AudioCapture to ensure clean state
+    // Dispose and recreate AudioWorkletCapture to ensure clean state
     if (audioCapture.current) {
       audioCapture.current.dispose();
     }
     
-    audioCapture.current = new AudioCapture({
+    audioCapture.current = new AudioWorkletCapture({
       sampleRate,
       channels,
       bufferSize

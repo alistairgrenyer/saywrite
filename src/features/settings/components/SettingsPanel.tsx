@@ -2,11 +2,11 @@
  * Settings panel component
  */
 import { useState } from 'react';
-import { GlassPanel } from '@shared/components/GlassPanel';
+import { Paper, Tabs, Select, Checkbox, Slider, ActionIcon, Text, Stack, Group } from '@mantine/core';
 import { AppSettings } from '../hooks/useSettings';
-import { Position } from '@shared/lib/types';
-import { useRelativePosition } from '@shared/hooks/useRelativePosition';
-import { dimensions, zIndex } from '@shared/lib/design-tokens';
+import { useComponentPosition } from '@shared/layout/useComponentPosition';
+import { Position } from '@shared/layout/positioning';
+import { zIndex, colors, components } from '@shared/lib/design-tokens';
 import '@/styles/shared.css';
 import './SettingsPanel.css';
 
@@ -21,18 +21,16 @@ interface SettingsPanelProps {
 export function SettingsPanel({ settings, onUpdateSettings, onClose, isVisible, bubblePosition }: SettingsPanelProps) {
   const [activeTab, setActiveTab] = useState<'audio' | 'ui' | 'transcription'>('audio');
 
-  // Use relative positioning based on bubble position
-  const { position } = useRelativePosition({
-    parentPosition: bubblePosition,
-    componentType: 'settings',
-    elementSize: { 
-      width: parseInt(dimensions.panel.minWidth), 
-      height: parseInt(dimensions.panel.minHeight) 
-    },
-    enabled: isVisible,
+  // Use simplified positioning system
+  const position = useComponentPosition({
+    bubblePosition,
+    componentSize: components.settings.size,
+    config: components.settings.positioning,
+    isVisible,
   });
 
   if (!isVisible) return null;
+  if (!position) return null; // Don't render until we have a position
 
   const tabs = [
     { id: 'audio' as const, label: 'Audio', icon: '🎤' },
@@ -41,212 +39,205 @@ export function SettingsPanel({ settings, onUpdateSettings, onClose, isVisible, 
   ];
 
   const renderAudioSettings = () => (
-    <div className="settings-section">
-      <div className="setting-group">
-        <label className="setting-label">Sample Rate</label>
-        <select
-          value={settings.audioSettings.sampleRate}
-          onChange={(e) => onUpdateSettings({
-            audioSettings: { ...settings.audioSettings, sampleRate: Number(e.target.value) }
-          })}
-          className="glass-select"
-        >
-          <option value={16000}>16 kHz</option>
-          <option value={44100}>44.1 kHz</option>
-          <option value={48000}>48 kHz</option>
-        </select>
-      </div>
+    <Stack gap="md">
+      <Select
+        label="Sample Rate"
+        value={settings.audioSettings.sampleRate.toString()}
+        onChange={(value) => onUpdateSettings({
+          audioSettings: { ...settings.audioSettings, sampleRate: Number(value) }
+        })}
+        data={[
+          { value: '16000', label: '16 kHz' },
+          { value: '44100', label: '44.1 kHz' },
+          { value: '48000', label: '48 kHz' },
+        ]}
+      />
 
-      <div className="setting-group">
-        <label className="setting-label">Buffer Size</label>
-        <select
-          value={settings.audioSettings.bufferSize}
-          onChange={(e) => onUpdateSettings({
-            audioSettings: { ...settings.audioSettings, bufferSize: Number(e.target.value) }
-          })}
-          className="glass-select"
-        >
-          <option value={1024}>1024</option>
-          <option value={2048}>2048</option>
-          <option value={4096}>4096</option>
-        </select>
-      </div>
+      <Select
+        label="Buffer Size"
+        value={settings.audioSettings.bufferSize.toString()}
+        onChange={(value) => onUpdateSettings({
+          audioSettings: { ...settings.audioSettings, bufferSize: Number(value) }
+        })}
+        data={[
+          { value: '1024', label: '1024' },
+          { value: '2048', label: '2048' },
+          { value: '4096', label: '4096' },
+        ]}
+      />
 
-      <div className="setting-group">
-        <label className="setting-checkbox">
-          <input
-            type="checkbox"
-            checked={settings.audioSettings.echoCancellation}
-            onChange={(e) => onUpdateSettings({
-              audioSettings: { ...settings.audioSettings, echoCancellation: e.target.checked }
-            })}
-          />
-          <span>Echo Cancellation</span>
-        </label>
-      </div>
+      <Checkbox
+        label="Echo Cancellation"
+        checked={settings.audioSettings.echoCancellation}
+        onChange={(e) => onUpdateSettings({
+          audioSettings: { ...settings.audioSettings, echoCancellation: e.currentTarget.checked }
+        })}
+      />
 
-      <div className="setting-group">
-        <label className="setting-checkbox">
-          <input
-            type="checkbox"
-            checked={settings.audioSettings.noiseSuppression}
-            onChange={(e) => onUpdateSettings({
-              audioSettings: { ...settings.audioSettings, noiseSuppression: e.target.checked }
-            })}
-          />
-          <span>Noise Suppression</span>
-        </label>
-      </div>
+      <Checkbox
+        label="Noise Suppression"
+        checked={settings.audioSettings.noiseSuppression}
+        onChange={(e) => onUpdateSettings({
+          audioSettings: { ...settings.audioSettings, noiseSuppression: e.currentTarget.checked }
+        })}
+      />
 
-      <div className="setting-group">
-        <label className="setting-checkbox">
-          <input
-            type="checkbox"
-            checked={settings.audioSettings.autoGainControl}
-            onChange={(e) => onUpdateSettings({
-              audioSettings: { ...settings.audioSettings, autoGainControl: e.target.checked }
-            })}
-          />
-          <span>Auto Gain Control</span>
-        </label>
-      </div>
-    </div>
+      <Checkbox
+        label="Auto Gain Control"
+        checked={settings.audioSettings.autoGainControl}
+        onChange={(e) => onUpdateSettings({
+          audioSettings: { ...settings.audioSettings, autoGainControl: e.currentTarget.checked }
+        })}
+      />
+    </Stack>
   );
 
   const renderUISettings = () => (
-    <div className="settings-section">
-      <div className="setting-group">
-        <label className="setting-label">Theme</label>
-        <select
-          value={settings.uiSettings.theme}
-          onChange={(e) => onUpdateSettings({
-            uiSettings: { ...settings.uiSettings, theme: e.target.value as 'dark' | 'light' | 'auto' }
-          })}
-          className="glass-select"
-        >
-          <option value="dark">Dark</option>
-          <option value="light">Light</option>
-          <option value="auto">Auto</option>
-        </select>
-      </div>
+    <Stack gap="md">
+      <Select
+        label="Theme"
+        value={settings.uiSettings.theme}
+        onChange={(value) => onUpdateSettings({
+          uiSettings: { ...settings.uiSettings, theme: value as 'dark' | 'light' | 'auto' }
+        })}
+        data={[
+          { value: 'dark', label: 'Dark' },
+          { value: 'light', label: 'Light' },
+          { value: 'auto', label: 'Auto' },
+        ]}
+      />
 
-      <div className="setting-group">
-        <label className="setting-label">Window Opacity</label>
-        <input
-          type="range"
-          min="0.5"
-          max="1"
-          step="0.05"
+      <Stack gap="xs">
+        <Text size="sm" style={{ color: colors.secondary }}>
+          Window Opacity: {Math.round(settings.uiSettings.windowOpacity * 100)}%
+        </Text>
+        <Slider
+          min={0.5}
+          max={1}
+          step={0.05}
           value={settings.uiSettings.windowOpacity}
-          onChange={(e) => onUpdateSettings({
-            uiSettings: { ...settings.uiSettings, windowOpacity: Number(e.target.value) }
+          onChange={(value) => onUpdateSettings({
+            uiSettings: { ...settings.uiSettings, windowOpacity: value }
           })}
-          className="glass-slider"
+          size="sm"
+          style={{ width: '100%' }}
         />
-        <span className="setting-value">{Math.round(settings.uiSettings.windowOpacity * 100)}%</span>
-      </div>
+      </Stack>
 
-      <div className="setting-group">
-        <label className="setting-checkbox">
-          <input
-            type="checkbox"
-            checked={settings.uiSettings.alwaysOnTop}
-            onChange={(e) => onUpdateSettings({
-              uiSettings: { ...settings.uiSettings, alwaysOnTop: e.target.checked }
-            })}
-          />
-          <span>Always on Top</span>
-        </label>
-      </div>
-    </div>
+      <Checkbox
+        label="Always on Top"
+        checked={settings.uiSettings.alwaysOnTop}
+        onChange={(e) => onUpdateSettings({
+          uiSettings: { ...settings.uiSettings, alwaysOnTop: e.currentTarget.checked }
+        })}
+      />
+    </Stack>
   );
 
   const renderTranscriptionSettings = () => (
-    <div className="settings-section">
-      <div className="setting-group">
-        <label className="setting-label">Language</label>
-        <select
-          value={settings.transcriptionSettings.language}
-          onChange={(e) => onUpdateSettings({
-            transcriptionSettings: { ...settings.transcriptionSettings, language: e.target.value }
-          })}
-          className="glass-select"
-        >
-          <option value="en-US">English (US)</option>
-          <option value="en-GB">English (UK)</option>
-          <option value="es-ES">Spanish</option>
-          <option value="fr-FR">French</option>
-          <option value="de-DE">German</option>
-        </select>
-      </div>
+    <Stack gap="md">
+      <Select
+        label="Language"
+        value={settings.transcriptionSettings.language}
+        onChange={(value) => onUpdateSettings({
+          transcriptionSettings: { ...settings.transcriptionSettings, language: value || 'en-US' }
+        })}
+        data={[
+          { value: 'en-US', label: 'English (US)' },
+          { value: 'en-GB', label: 'English (UK)' },
+          { value: 'es-ES', label: 'Spanish' },
+          { value: 'fr-FR', label: 'French' },
+          { value: 'de-DE', label: 'German' },
+        ]}
+      />
 
-      <div className="setting-group">
-        <label className="setting-checkbox">
-          <input
-            type="checkbox"
-            checked={settings.transcriptionSettings.autoSave}
-            onChange={(e) => onUpdateSettings({
-              transcriptionSettings: { ...settings.transcriptionSettings, autoSave: e.target.checked }
-            })}
-          />
-          <span>Auto Save Transcripts</span>
-        </label>
-      </div>
+      <Checkbox
+        label="Auto Save Transcripts"
+        checked={settings.transcriptionSettings.autoSave}
+        onChange={(e) => onUpdateSettings({
+          transcriptionSettings: { ...settings.transcriptionSettings, autoSave: e.currentTarget.checked }
+        })}
+      />
 
-      <div className="setting-group">
-        <label className="setting-checkbox">
-          <input
-            type="checkbox"
-            checked={settings.transcriptionSettings.showTimestamps}
-            onChange={(e) => onUpdateSettings({
-              transcriptionSettings: { ...settings.transcriptionSettings, showTimestamps: e.target.checked }
-            })}
-          />
-          <span>Show Timestamps</span>
-        </label>
-      </div>
-    </div>
+      <Checkbox
+        label="Show Timestamps"
+        checked={settings.transcriptionSettings.showTimestamps}
+        onChange={(e) => onUpdateSettings({
+          transcriptionSettings: { ...settings.transcriptionSettings, showTimestamps: e.currentTarget.checked }
+        })}
+      />
+    </Stack>
   );
 
   return (
-    <GlassPanel
+    <Paper
       className="settings-panel"
-      animate={true}
       style={{
         position: 'fixed',
         left: `${position.x}px`,
         top: `${position.y}px`,
-        zIndex: zIndex.modal,
-        width: dimensions.panel.minWidth,
-        maxHeight: '80vh',
-        overflow: 'auto'
+        width: components.settings.size.width,
+        minHeight: components.settings.minSize.height,
+        maxHeight: components.settings.maxSize.height,
+        background: components.settings.styles.background,
+        backdropFilter: components.settings.styles.backdropFilter,
+        border: components.settings.styles.border,
+        borderRadius: components.settings.styles.borderRadius,
+        boxShadow: components.settings.styles.boxShadow,
+        zIndex: zIndex.settings,
+        display: 'flex',
+        flexDirection: 'column',
       }}
     >
-      <div className="settings-content">
-        <div className="settings-header">
-          <span className="text-primary">Settings</span>
-          <button className="glass-button" onClick={onClose}>×</button>
-        </div>
+      <Stack gap={0} style={{ height: '100%' }}>
+        {/* Header */}
+        <Group justify="space-between" align="center" p="md" style={{ borderBottom: `1px solid ${colors.muted}20` }}>
+          <Text 
+            size="lg" 
+            fw={600} 
+            style={{ color: colors.primary }}
+          >
+            Settings
+          </Text>
+          <ActionIcon 
+            variant="subtle" 
+            onClick={onClose}
+            size="sm"
+            style={{ color: colors.secondary }}
+          >
+            ×
+          </ActionIcon>
+        </Group>
 
-        <div className="settings-tabs">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              className={`tab-button ${activeTab === tab.id ? 'active' : ''}`}
-              onClick={() => setActiveTab(tab.id)}
-            >
-              <span className="tab-icon">{tab.icon}</span>
-              <span className="tab-label">{tab.label}</span>
-            </button>
-          ))}
-        </div>
+        {/* Tabs */}
+        <Tabs value={activeTab} onChange={(value) => setActiveTab(value as 'audio' | 'ui' | 'transcription')} orientation="horizontal" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+          <Tabs.List grow px="md" pt="sm" style={{ flexShrink: 0 }}>
+            {tabs.map((tab) => (
+              <Tabs.Tab key={tab.id} value={tab.id} style={{ fontSize: '12px' }}>
+                <Group gap="xs" align="center">
+                  <span style={{ fontSize: '14px' }}>{tab.icon}</span>
+                  <span>{tab.label}</span>
+                </Group>
+              </Tabs.Tab>
+            ))}
+          </Tabs.List>
 
-        <div className="settings-body">
-          {activeTab === 'audio' && renderAudioSettings()}
-          {activeTab === 'ui' && renderUISettings()}
-          {activeTab === 'transcription' && renderTranscriptionSettings()}
-        </div>
-      </div>
-    </GlassPanel>
+          {/* Content Area */}
+          <div style={{ overflow: 'auto', flex: 1, minHeight: 0 }}>
+            <Tabs.Panel value="audio" p="md">
+              {renderAudioSettings()}
+            </Tabs.Panel>
+
+            <Tabs.Panel value="ui" p="md">
+              {renderUISettings()}
+            </Tabs.Panel>
+
+            <Tabs.Panel value="transcription" p="md">
+              {renderTranscriptionSettings()}
+            </Tabs.Panel>
+          </div>
+        </Tabs>
+      </Stack>
+    </Paper>
   );
 }
