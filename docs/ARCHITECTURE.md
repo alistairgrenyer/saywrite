@@ -45,10 +45,10 @@ features/[feature-name]/
 
 ### Feature Responsibilities
 
-- **Recorder**: Microphone capture, audio processing, recording state management
-- **Transcript**: STT results display, audio playback, text editing
+- **Recorder**: Modern AudioWorklet-based microphone capture, real-time audio processing, recording state management
+- **Transcript**: STT results display, audio playback with waveform visualization, text editing
 - **Rewrite**: AI-powered text enhancement and style suggestions
-- **Settings**: User preferences, configuration persistence
+- **Settings**: User preferences, configuration persistence, audio device management
 
 ## Shared Infrastructure
 
@@ -59,6 +59,11 @@ features/[feature-name]/
 ### Hooks (`shared/hooks/`)
 - **usePosition**: Draggable position management with mouse events
 - **useError**: Global error state management
+
+### Layout (`shared/layout/`)
+- **positioning.ts**: Pure functions for component position calculations
+- **useBubblePosition**: Simple hook for managing bubble position state
+- **useComponentPosition**: Hook for calculating component positions relative to bubble
 
 ### Library (`shared/lib/`)
 - **types.ts**: Shared TypeScript interfaces and types
@@ -150,12 +155,51 @@ The project uses TypeScript path aliases for clean imports:
 - **Integration Tests**: Test feature workflows end-to-end
 - **E2E Tests**: Test full application flows with Electron
 
+## Layout System Architecture
+
+SayWrite uses a **simplified, declarative positioning system** that replaced the previous complex subscription-based layout manager.
+
+### Design Principles
+- **Pure Functions**: Position calculations use pure functions for predictable results
+- **Declarative**: Components receive position as props rather than subscribing to global state
+- **No Side Effects**: Positioning logic has no side effects or hidden dependencies
+- **React Patterns**: Uses standard React hooks and prop passing
+
+### Core Components
+- **`positioning.ts`**: Pure functions for calculating component positions relative to bubble
+- **`useBubblePosition`**: Simple hook managing bubble position state
+- **`useComponentPosition`**: Hook that calculates component position based on bubble position
+- **Prop-based positioning**: Components receive `bubblePosition` as props and calculate their own position
+
+### Benefits
+- **No infinite loops**: Eliminates re-render cycles from complex subscription systems
+- **Predictable**: Pure functions make positioning behavior easy to understand and test
+- **Performance**: No unnecessary re-calculations or subscription overhead
+- **Maintainable**: Simple, declarative code is easier to debug and modify
+
+## Audio System Architecture
+
+SayWrite uses modern **AudioWorklet-based audio processing** for real-time recording.
+
+### AudioWorklet Implementation
+- **`AudioWorkletCapture`**: Main audio capture class using AudioWorklet API
+- **`audioProcessor.js`**: AudioWorklet processor running on audio thread
+- **Real-time processing**: Audio processing happens on dedicated audio thread
+- **No deprecation warnings**: Replaces deprecated ScriptProcessorNode
+
+### Benefits
+- **Better performance**: Audio processing doesn't block main thread
+- **Future-proof**: Uses modern Web Audio API standards
+- **Lower latency**: Direct audio thread processing reduces delays
+- **Stable**: No deprecated API warnings or compatibility issues
+
 ## Performance Considerations
 
 - **Lazy Loading**: Load features on demand where possible
-- **Audio Processing**: Use Web Workers for heavy audio processing
+- **AudioWorklet Processing**: Real-time audio processing on dedicated thread
 - **Memory Management**: Properly dispose of audio contexts and streams
 - **Debouncing**: Debounce expensive operations (file I/O, API calls)
+- **Pure Functions**: Layout calculations use pure functions for optimal performance
 
 ## Security Considerations
 

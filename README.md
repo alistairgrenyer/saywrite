@@ -4,13 +4,14 @@ SayWrite is a modern Electron application that transforms your voice into polish
 
 ## ✨ Features
 
-- **🎤 Voice Recording**: One-click voice recording with visual feedback
+- **🎤 Voice Recording**: Modern AudioWorklet-based recording with visual feedback
 - **📝 Real-time Transcription**: Speech-to-text powered by Whisper
 - **✨ AI Rewriting**: Transform casual speech into professional text (planned)
 - **⚙️ Settings Management**: Configurable audio, UI, and transcription settings
 - **🎨 Modern UI**: Beautiful glass morphism interface with smooth animations
 - **🔒 Secure Architecture**: Electron security boundaries with context isolation
 - **🔄 Real-time Feedback**: Visual indicators for recording, processing, and transcription states
+- **📐 Simplified Layout**: Declarative positioning system with pure functions and React hooks
 
 ## Architecture
 
@@ -144,9 +145,10 @@ A debug menu item will allow JWT injection in development builds.
 ## Current Features
 
 ### 🎤 Recorder
-- Real-time audio capture from microphone
+- Modern AudioWorklet-based audio capture (replaces deprecated ScriptProcessorNode)
+- Real-time audio processing on dedicated audio thread
 - Visual recording meter with waveform display
-- Audio level monitoring and processing
+- Audio level monitoring and resampling
 - WAV file generation for transcription
 
 ### 📝 Transcript
@@ -165,6 +167,7 @@ A debug menu item will allow JWT injection in development builds.
 - Glass morphism design with dark transparency
 - Smooth animations and transitions
 - Draggable floating bubble interface
+- Simplified declarative positioning system
 - Responsive and accessible components
 
 ## Security Considerations
