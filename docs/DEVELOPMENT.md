@@ -223,6 +223,47 @@ export function useMyFeature(): UseMyFeatureReturn {
    const result = await ipcClient.myNewMethod(data);
    ```
 
+## Deep-Link Authentication (Dev/QA)
+
+SayWrite handles authentication via a custom protocol callback. During development, protocol registration may not be active; deep-link testing is most reliable in a packaged build.
+
+- **Protocol**: `saywrite://auth/callback`
+- **Query params**: `access_token`, `refresh_token`, `expires_in` (seconds), optional `email`, `id`
+
+#### Preload API
+
+```ts
+// window.electronAPI
+openExternal(url: string): Promise<void>
+onAuthTokens(cb: (payload: { accessToken: string; refreshToken: string; expiresAt: number; user?: { id: string; email: string } }) => void): () => void
+```
+
+Renderer should subscribe and persist tokens via `authService.setTokens()` and `authService.setUser()`.
+
+#### Main Process Responsibilities
+
+- Enforce single instance and parse deep links on:
+  - macOS: `app.on('open-url')`
+  - Windows/Linux: `app.on('second-instance')` and initial `process.argv`
+- Validate only `saywrite://auth/callback` and build payload for `auth:tokens` IPC
+- Never log token values
+
+#### Testing the Deep Link
+
+Packaged app recommended:
+
+- macOS:
+  ```bash
+  open "saywrite://auth/callback?access_token=AAA&refresh_token=BBB&expires_in=3600&email=user%40example.com&id=uid123"
+  ```
+
+- Windows (PowerShell/CMD):
+  ```bat
+  start "" "saywrite://auth/callback?access_token=AAA&refresh_token=BBB&expires_in=3600"
+  ```
+
+Expected: Renderer receives `'auth:tokens'` payload via preload subscription and updates `authService`.
+
 ## Styling
 
 ### Design System

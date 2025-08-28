@@ -83,6 +83,30 @@ src/
 - **[Architecture Guide](docs/ARCHITECTURE.md)**: Detailed architecture overview and design principles
 - **[Development Guide](docs/DEVELOPMENT.md)**: Comprehensive development workflow and guidelines
 
+## Authentication (Deep Link)
+
+SayWrite uses a custom protocol deep link to deliver authentication tokens from the browser back into the app.
+
+- **Custom protocol**: `saywrite://auth/callback`
+- **Callback query params**: `access_token`, `refresh_token`, `expires_in` (seconds), optional `email`, `id`
+- **Main process**: Parses the deep link and sends payload to renderer via IPC channel `auth:tokens`
+  - Payload shape: `{ accessToken, refreshToken, expiresAt, user?: { id, email } }`
+  - `expiresAt = Date.now() + expires_in * 1000`
+  - No token values are logged
+- **Preload** (`electron/preload.ts`): Exposes `window.electronAPI.onAuthTokens(cb)` and `window.electronAPI.openExternal(url)`
+- **Renderer**: Subscribes to tokens and persists via `authService`
+  - See `src/app/shell/AppShell.tsx`
+  - `authService.setTokens({ accessToken, refreshToken, expiresAt })`
+  - `authService.setUser(user)` if present
+
+### Refresh Token API
+
+`authService.refreshAccessToken()` calls:
+
+- `POST https://api.saywrite.nously.io/api/v1/auth/refresh_token?refresh_token=<token>`
+- Expects `{ access_token, token_type, expires_in }`
+- Keeps existing refresh token; updates access token and `expiresAt`
+
 ## API Contracts
 
 ### Authentication
@@ -172,11 +196,11 @@ A debug menu item will allow JWT injection in development builds.
 
 ## Security Considerations
 
-- JWT tokens are never accessible in the renderer process
-- All API calls are proxied through the main process
-- Keytar provides OS-level secure storage
-- Request/response validation with Zod schemas
-- Automatic token cleanup on 401 responses
+- Tokens are delivered to the renderer via a single IPC event `auth:tokens` and stored using `authService`
+- Tokens are never logged
+- Electron security boundaries are preserved (`contextIsolation: true`, `nodeIntegration: false`)
+- Request/response validation can be layered at boundaries (e.g., with Zod)
+- Automatic token cleanup on refresh failures and logout
 
 ## Error Handling
 
@@ -196,3 +220,17 @@ npm run build
 ```
 
 This will create distributable packages for your target platform. Ensure keytar is properly configured for your deployment targets.
+
+### Protocol Registration (Packaging)
+
+`electron-builder.json5` registers the custom protocol:
+
+```json
+{
+  "protocols": [
+    { "name": "SayWrite", "schemes": ["saywrite"] }
+  ]
+}
+```
+
+On install, the OS associates `saywrite://` links with SayWrite.

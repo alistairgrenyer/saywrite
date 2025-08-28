@@ -1,7 +1,7 @@
 /**
  * Main application shell that orchestrates all features
  */
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useRecorder } from '@features/recorder';
 import { useTranscript } from '@features/transcript';
 import { useSettings } from '@features/settings';
@@ -18,6 +18,7 @@ import '@/styles/shared.css';
 export function AppShell() {
   const [showSettings, setShowSettings] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(authService.isAuthenticated());
+  const [userEmail, setUserEmail] = useState<string>(authService.getAuthState().user?.email || '');
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; visible: boolean }>({
     x: 0,
     y: 0,
@@ -101,7 +102,48 @@ export function AppShell() {
   const handleLogout = useCallback(() => {
     authService.logout();
     setIsAuthenticated(false);
+    setUserEmail('');
     setContextMenu(prev => ({ ...prev, visible: false }));
+  }, []);
+
+  // Subscribe to deep-link auth tokens sent from main via preload
+  useEffect(() => {
+    const api = (window as any).electronAPI;
+    if (!api?.onAuthTokens) return;
+    const unsubscribe = api.onAuthTokens((payload: { accessToken: string; refreshToken: string; expiresAt: number; user?: { id: string; email: string } }) => {
+      // Do not log tokens. Persist via authService
+      authService.setTokens({
+        accessToken: payload.accessToken,
+        refreshToken: payload.refreshToken,
+        expiresAt: payload.expiresAt,
+      });
+      if (payload.user && payload.user.id) {
+        authService.setUser({ id: payload.user.id, email: payload.user.email || '' });
+        setUserEmail(payload.user.email || '');
+      } else {
+        // If deep link didn't include user info, fetch profile to populate email/id
+        (async () => {
+          try {
+            const access = await authService.getAccessToken();
+            if (!access) return;
+            const res = await fetch('https://api.saywrite.nously.io/api/v1/users/me', {
+              headers: { Authorization: `Bearer ${access}` },
+            });
+            if (res.ok) {
+              const me = await res.json(); // expects { id, email, ... }
+              if (me?.id || me?.email) {
+                authService.setUser({ id: String(me.id || ''), email: String(me.email || '') });
+                setUserEmail(String(me.email || ''));
+              }
+            }
+          } catch {}
+        })();
+      }
+      setIsAuthenticated(true);
+    });
+    return () => {
+      if (typeof unsubscribe === 'function') unsubscribe();
+    };
   }, []);
 
   const handleExit = useCallback(() => {
@@ -182,19 +224,29 @@ export function AppShell() {
               setContextMenu(prev => ({ ...prev, visible: false }));
             }
           },
-          ...(isAuthenticated ? [
-            {
-              label: 'Logout',
-              icon: '🚪',
-              onClick: handleLogout
-            }
-          ] : [
-            {
-              label: 'Login',
-              icon: '🔑',
-              onClick: handleLogin
-            }
-          ]),
+          ...(isAuthenticated
+            ? [
+                // Show the signed-in email as an info item
+                {
+                  label: userEmail || 'Signed in',
+                  icon: '👤',
+                  onClick: () => setContextMenu(prev => ({ ...prev, visible: false }))
+                },
+                {
+                  label: 'Logout',
+                  icon: '🚪',
+                  onClick: handleLogout
+                }
+              ]
+            : [
+                // Show Login labeled with email if we have one from stored refresh token
+                {
+                  label: userEmail || 'Login',
+                  icon: '🔑',
+                  onClick: handleLogin
+                }
+              ]
+          ),
           {
             label: 'Exit',
             icon: '🚪',

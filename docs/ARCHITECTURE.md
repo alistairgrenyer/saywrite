@@ -79,6 +79,35 @@ SayWrite maintains strict Electron security boundaries:
 - **Preload Script**: All OS/file/process operations go through typed IPC channels
 - **Typed IPC**: All IPC communication uses TypeScript interfaces for type safety
 
+### Deep-Link Authentication
+
+SayWrite authenticates via a browser flow that redirects back using a custom protocol:
+
+- **Protocol**: `saywrite://auth/callback`
+- **Params**: `access_token`, `refresh_token`, `expires_in` (seconds), optional `email`, `id`
+- **Main Process** (`electron/main.ts`):
+  - Enforces single instance and handles platform differences:
+    - macOS: `app.on('open-url')`
+    - Windows/Linux: `app.on('second-instance')` + initial `process.argv`
+  - Parses only `saywrite://auth/callback` and constructs payload:
+    `{ accessToken, refreshToken, expiresAt, user?: { id, email } }`
+  - Forwards to renderer via `win.webContents.send('auth:tokens', payload)`
+  - Never logs token values
+- **Preload** (`electron/preload.ts`):
+  - Exposes `window.electronAPI.onAuthTokens(cb)` (returns unsubscribe)
+  - Exposes `window.electronAPI.openExternal(url)`
+- **Renderer**:
+  - Subscribes and persists tokens using `authService.setTokens()` and optional `setUser()`
+
+```
+Browser → saywrite://auth/callback?access_token=...&refresh_token=...&expires_in=...
+    Main (validate + build payload)
+        ↓ 'auth:tokens' IPC
+    Preload (contextBridge)
+        ↓ window.electronAPI.onAuthTokens
+    Renderer (authService persists tokens)
+```
+
 ### IPC Communication Flow
 
 ```

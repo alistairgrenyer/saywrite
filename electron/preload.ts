@@ -46,7 +46,16 @@ contextBridge.exposeInMainWorld('app', {
 // --------- Expose Electron API surface ---------
 contextBridge.exposeInMainWorld('electronAPI', {
   openExternal(url: string): Promise<void> {
-    return ipcRenderer.invoke('shell:openExternal', url)
+    // Prefer new channel; main also supports legacy 'shell:openExternal'
+    return ipcRenderer.invoke('open-external', url)
+  },
+
+  onAuthTokens(callback: (payload: { accessToken: string; refreshToken: string; expiresAt: number; user?: { id: string; email: string } }) => void) {
+    const listener = (_: Electron.IpcRendererEvent, payload: any) => {
+      callback(payload)
+    }
+    ipcRenderer.on('auth:tokens', listener)
+    return () => ipcRenderer.off('auth:tokens', listener)
   },
 
   closeApp(): void {

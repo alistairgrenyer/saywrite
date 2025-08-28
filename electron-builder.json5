@@ -39,5 +39,11 @@
       "AppImage"
     ],
     "artifactName": "${productName}-Linux-${version}.${ext}"
-  }
+  },
+  "protocols": [
+    {
+      "name": "SayWrite",
+      "schemes": ["saywrite"]
+    }
+  ]
 }

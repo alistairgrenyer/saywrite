@@ -25,8 +25,8 @@ class AuthService {
     user: null
   };
 
-  private readonly LOGIN_URL = 'https://app.saywrite.com/auth/login';
-  private readonly REFRESH_URL = 'https://api.saywrite.com/auth/refresh';
+  private readonly LOGIN_URL = 'https://app.saywrite.nously.io/login';
+  private readonly REFRESH_URL = 'https://api.saywrite.nously.io/api/v1/auth/refresh_token';
   private readonly TOKEN_STORAGE_KEY = 'saywrite_auth_tokens';
   private readonly USER_STORAGE_KEY = 'saywrite_user';
 
@@ -105,8 +105,11 @@ class AuthService {
       // Token expired, try to refresh
       const refreshed = await this.refreshAccessToken();
       if (!refreshed) {
-        // Refresh failed, user needs to login again
+        // Refresh failed: clear and start login flow again
         this.logout();
+        try {
+          await this.openLoginPortal();
+        } catch {}
         return null;
       }
     }
@@ -172,11 +175,10 @@ class AuthService {
         const tokens: AuthTokens = JSON.parse(storedTokens);
         const now = Date.now();
         
-        // Check if access token is still valid
-        if (now < tokens.expiresAt) {
-          this.authState.tokens = tokens;
-          this.authState.isAuthenticated = true;
-        }
+        // Always load tokens (keep refresh token available),
+        // but mark isAuthenticated only if access token is still valid
+        this.authState.tokens = tokens;
+        this.authState.isAuthenticated = now < tokens.expiresAt;
       }
 
       if (storedUser) {
@@ -197,12 +199,12 @@ class AuthService {
     if (!refreshToken) return false;
 
     try {
-      const response = await fetch(this.REFRESH_URL, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ refreshToken })
+      // API expects refresh_token as a query parameter, method POST
+      const url = new URL(this.REFRESH_URL);
+      url.searchParams.set('refresh_token', refreshToken);
+
+      const response = await fetch(url.toString(), {
+        method: 'POST'
       });
 
       if (!response.ok) {
@@ -211,13 +213,14 @@ class AuthService {
       }
 
       const data = await response.json();
-      
-      // Expected response format: { accessToken: string, refreshToken: string, expiresIn: number }
-      if (data.accessToken && data.refreshToken && data.expiresIn) {
+
+      // Expected response format: { access_token: string, token_type: 'bearer', expires_in: number }
+      if (data.access_token && typeof data.expires_in === 'number') {
         const newTokens: AuthTokens = {
-          accessToken: data.accessToken,
-          refreshToken: data.refreshToken,
-          expiresAt: Date.now() + (data.expiresIn * 1000) // Convert seconds to milliseconds
+          accessToken: data.access_token,
+          // Keep existing refresh token as API does not return a new one
+          refreshToken: refreshToken,
+          expiresAt: Date.now() + data.expires_in * 1000 // seconds -> ms
         };
 
         this.setTokens(newTokens);
