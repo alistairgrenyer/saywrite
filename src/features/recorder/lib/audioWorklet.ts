@@ -1,14 +1,12 @@
 /**
- * Audio capture and processing functionality
- * Moved from src/utils/audioCapture.ts
+ * AudioWorklet-based audio processing to replace deprecated ScriptProcessorNode
  */
-import { AudioCaptureOptions, AudioLevelData } from '@shared/lib/types';
 
-export class AudioCapture {
+export class AudioWorkletCapture {
   private mediaStream: MediaStream | null = null;
   private audioContext: AudioContext | null = null;
   private analyser: AnalyserNode | null = null;
-  private scriptProcessor: ScriptProcessorNode | null = null;
+  private workletNode: AudioWorkletNode | null = null;
   private pcmBuffer: Float32Array[] = [];
   private levelCallback: ((level: AudioLevelData) => void) | null = null;
   private animationFrame: number | null = null;
@@ -31,31 +29,36 @@ export class AudioCapture {
         }
       });
 
-      // Use browser's default sample rate, then resample if needed
       this.audioContext = new AudioContext();
       console.log('AudioContext sample rate:', this.audioContext.sampleRate);
+
+      // Register the audio worklet processor
+      await this.audioContext.audioWorklet.addModule('/audioProcessor.js');
+
       const source = this.audioContext.createMediaStreamSource(this.mediaStream);
       
       this.analyser = this.audioContext.createAnalyser();
       this.analyser.fftSize = this.options.bufferSize;
       this.analyser.smoothingTimeConstant = 0.3;
       
-      // Set up script processor for PCM capture
-      this.scriptProcessor = this.audioContext.createScriptProcessor(this.options.bufferSize, 1, 1);
-      this.scriptProcessor.onaudioprocess = (event) => {
-        if (this.isRecording) {
-          const inputBuffer = event.inputBuffer;
-          const inputData = inputBuffer.getChannelData(0);
-          // Create a copy to avoid reference issues
-          const bufferCopy = new Float32Array(inputData.length);
-          bufferCopy.set(inputData);
-          this.pcmBuffer.push(bufferCopy);
+      // Create AudioWorkletNode instead of ScriptProcessorNode
+      this.workletNode = new AudioWorkletNode(this.audioContext, 'audio-processor', {
+        processorOptions: {
+          bufferSize: this.options.bufferSize
+        }
+      });
+
+      // Listen for audio data from the worklet
+      this.workletNode.port.onmessage = (event) => {
+        if (this.isRecording && event.data.type === 'audioData') {
+          const audioData = new Float32Array(event.data.buffer);
+          this.pcmBuffer.push(audioData);
         }
       };
       
       source.connect(this.analyser);
-      source.connect(this.scriptProcessor);
-      this.scriptProcessor.connect(this.audioContext.destination);
+      source.connect(this.workletNode);
+      this.workletNode.connect(this.audioContext.destination);
 
     } catch (error) {
       throw new Error(`Failed to initialize audio capture: ${error}`);
@@ -63,30 +66,29 @@ export class AudioCapture {
   }
 
   startRecording(): void {
-    if (!this.analyser || !this.scriptProcessor) {
+    if (!this.analyser || !this.workletNode) {
       throw new Error('Audio capture not initialized');
     }
 
-    // Force clear all buffers and reset state
     this.pcmBuffer = [];
-    this.isRecording = false; // Set false first to stop any ongoing processing
+    this.isRecording = false;
     
-    // Small delay to ensure any pending audio processing completes
     setTimeout(() => {
-      this.pcmBuffer = []; // Clear again to be sure
+      this.pcmBuffer = [];
       this.isRecording = true;
+      this.workletNode?.port.postMessage({ type: 'startRecording' });
       this.startLevelMonitoring();
-      console.log('Recording started with clean buffer');
+      console.log('Recording started with AudioWorklet');
     }, 10);
   }
 
   stopRecording(): Float32Array {
     this.isRecording = false;
+    this.workletNode?.port.postMessage({ type: 'stopRecording' });
     this.stopLevelMonitoring();
 
     console.log('Stopping recording, buffer count:', this.pcmBuffer.length);
     
-    // Concatenate all PCM buffers
     const totalLength = this.pcmBuffer.reduce((sum, buffer) => sum + buffer.length, 0);
     const result = new Float32Array(totalLength);
     let offset = 0;
@@ -104,10 +106,8 @@ export class AudioCapture {
       targetSampleRate: this.options.sampleRate
     });
 
-    // Clear buffer immediately after use
     this.pcmBuffer = [];
 
-    // Resample to target sample rate if different
     if (this.audioContext && this.audioContext.sampleRate !== this.options.sampleRate) {
       const resampled = this.resample(result, this.audioContext.sampleRate, this.options.sampleRate);
       console.log('Final resampled audio:', {
@@ -134,7 +134,6 @@ export class AudioCapture {
       const fraction = srcIndex - index;
       
       if (index + 1 < audioData.length) {
-        // Linear interpolation
         result[i] = audioData[index] * (1 - fraction) + audioData[index + 1] * fraction;
       } else {
         result[i] = audioData[index];
@@ -156,7 +155,6 @@ export class AudioCapture {
 
       this.analyser.getByteFrequencyData(dataArray);
 
-      // Calculate RMS (root mean square) for volume level
       let sum = 0;
       let peak = 0;
       
@@ -170,7 +168,7 @@ export class AudioCapture {
 
       if (this.levelCallback) {
         this.levelCallback({
-          rms: rms * 100, // Convert to 0-100 scale
+          rms: rms * 100,
           peak: peak * 100,
           timestamp: Date.now()
         });
@@ -194,21 +192,17 @@ export class AudioCapture {
   }
 
   async convertToWav(audioBlob: Blob): Promise<ArrayBuffer> {
-    // Convert WebM/Opus to WAV PCM for Whisper
     const audioContext = new AudioContext({ sampleRate: this.options.sampleRate });
     const arrayBuffer = await audioBlob.arrayBuffer();
     const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
     
-    // Convert to 16-bit PCM WAV
     const length = audioBuffer.length;
     const sampleRate = audioBuffer.sampleRate;
     const channels = audioBuffer.numberOfChannels;
     
-    // Create WAV header
     const buffer = new ArrayBuffer(44 + length * channels * 2);
     const view = new DataView(buffer);
     
-    // WAV header
     const writeString = (offset: number, string: string) => {
       for (let i = 0; i < string.length; i++) {
         view.setUint8(offset + i, string.charCodeAt(i));
@@ -229,7 +223,6 @@ export class AudioCapture {
     writeString(36, 'data');
     view.setUint32(40, length * channels * 2, true);
     
-    // Convert audio data to 16-bit PCM
     let offset = 44;
     for (let i = 0; i < length; i++) {
       for (let channel = 0; channel < channels; channel++) {
@@ -245,8 +238,8 @@ export class AudioCapture {
   dispose(): void {
     this.stopLevelMonitoring();
     
-    if (this.scriptProcessor) {
-      this.scriptProcessor.disconnect();
+    if (this.workletNode) {
+      this.workletNode.disconnect();
     }
     
     if (this.audioContext) {
@@ -260,8 +253,11 @@ export class AudioCapture {
     this.mediaStream = null;
     this.audioContext = null;
     this.analyser = null;
-    this.scriptProcessor = null;
+    this.workletNode = null;
     this.levelCallback = null;
     this.pcmBuffer = [];
   }
 }
+
+// Import types
+import { AudioCaptureOptions, AudioLevelData } from '@shared/lib/types';
