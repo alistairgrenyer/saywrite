@@ -1,28 +1,27 @@
 /**
  * Error display component for showing user-friendly error messages
  */
-import { AppError, Position } from '@shared/lib/types';
-import { useRelativePosition } from '@shared/hooks/useRelativePosition';
-import { zIndex } from '@shared/lib/design-tokens';
+import { AppError } from '@shared/lib/types';
+import { useComponentPosition } from '@shared/layout/useComponentPosition';
+import { Position } from '@shared/layout/positioning';
+import { zIndex, components } from '@shared/lib/design-tokens';
 import '@/styles/shared.css';
 import './ErrorDisplay.css';
 
 interface ErrorDisplayProps {
   error: AppError;
-  bubblePosition: Position;
   onClose: () => void;
   onRetry?: () => void;
+  bubblePosition: Position;
 }
 
-export function ErrorDisplay({ error, bubblePosition, onClose, onRetry }: ErrorDisplayProps) {
-  // Use relative positioning based on bubble position
-  const { position } = useRelativePosition({
-    parentPosition: bubblePosition,
-    componentType: 'error',
-    elementSize: { 
-      width: 300, 
-      height: 150 
-    },
+export function ErrorDisplay({ error, onClose, onRetry, bubblePosition }: ErrorDisplayProps) {
+  // Use simplified positioning system
+  const position = useComponentPosition({
+    bubblePosition,
+    componentSize: components.error.size,
+    config: components.error.positioning,
+    isVisible: true,
   });
   const getErrorIcon = () => {
     switch (error.type) {
@@ -34,6 +33,8 @@ export function ErrorDisplay({ error, bubblePosition, onClose, onRetry }: ErrorD
         return '⚠️';
     }
   };
+
+  if (!position) return null; // Don't render until we have a position
 
   return (
     <div 

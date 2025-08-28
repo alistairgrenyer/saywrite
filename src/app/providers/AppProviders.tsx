@@ -1,6 +1,9 @@
 /**
  * Application providers for global state and context
  */
+/**
+ * Root providers for the application
+ */
 import React from 'react';
 import { MantineProvider } from '@mantine/core';
 import { mantineTheme } from '@shared/lib/mantine-theme';

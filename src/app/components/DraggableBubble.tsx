@@ -72,7 +72,7 @@ export function DraggableBubble({
         bubbleRef.current.style.transform = `translate3d(${newPosition.x}px, ${newPosition.y}px, 0)`;
       }
 
-      // Update parent state less frequently
+      // Update parent state
       onPositionChange(newPosition);
     });
   }, [isDragging, dragOffset, onPositionChange]);
@@ -126,7 +126,7 @@ export function DraggableBubble({
     },
     {
       label: 'Exit',
-      icon: '✕',
+      icon: '🚪',
       onClick: onExit
     }
   ];
@@ -173,9 +173,9 @@ export function DraggableBubble({
 
       <ContextMenu
         items={contextMenuItems}
-        position={{ x: contextMenu.x, y: contextMenu.y }}
         isVisible={contextMenu.visible}
         onClose={handleCloseContextMenu}
+        bubblePosition={position}
       />
     </>
   );

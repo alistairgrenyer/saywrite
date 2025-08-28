@@ -6,7 +6,8 @@ import { useRecorder } from '@features/recorder';
 import { useTranscript } from '@features/transcript';
 import { useSettings } from '@features/settings';
 import { useError } from '@shared/hooks/useError';
-import { usePosition } from '@shared/hooks/usePosition';
+import { useBubblePosition } from '@shared/layout/useBubblePosition';
+import { Position } from '@shared/layout/positioning';
 import { DraggableBubble } from '../components/DraggableBubble';
 import { TranscriptWindow } from '@features/transcript';
 import { SettingsPanel } from '@features/settings';
@@ -22,15 +23,18 @@ export function AppShell() {
   // Settings management
   const { settings, updateSettings } = useSettings();
   
-  // Position management for bubble
-  const { position: bubblePosition, setPosition: setBubblePosition } = usePosition({
-    initialPosition: settings.uiSettings.bubblePosition,
-    onPositionChange: (newPosition) => {
-      updateSettings({
-        uiSettings: { ...settings.uiSettings, bubblePosition: newPosition }
-      });
-    }
-  });
+  // Simplified bubble position management
+  const { bubblePosition, updateBubblePosition } = useBubblePosition(
+    settings.uiSettings.bubblePosition
+  );
+  
+  // Handle bubble position changes
+  const handleBubblePositionChange = useCallback((newPosition: Position) => {
+    updateBubblePosition(newPosition);
+    updateSettings({
+      uiSettings: { ...settings.uiSettings, bubblePosition: newPosition }
+    });
+  }, [updateBubblePosition, updateSettings, settings.uiSettings]);
 
   // Recording functionality
   const { recordingState, startRecording, stopRecording } = useRecorder({
@@ -118,7 +122,7 @@ export function AppShell() {
           onOpenSettings={() => setShowSettings(true)}
           onExit={handleExit}
           position={bubblePosition}
-          onPositionChange={setBubblePosition}
+          onPositionChange={handleBubblePositionChange}
         />
       </div>
 
@@ -126,9 +130,9 @@ export function AppShell() {
       {error && (
         <ErrorDisplay
           error={error}
-          bubblePosition={bubblePosition}
           onClose={clearError}
           onRetry={error.type === 'audio' ? handleRetryAudio : undefined}
+          bubblePosition={bubblePosition}
         />
       )}
 
@@ -137,10 +141,10 @@ export function AppShell() {
         <TranscriptWindow
           text={transcriptState.text}
           isProcessing={transcriptState.isProcessing}
-          bubblePosition={bubblePosition}
           onClose={clearTranscript}
           audioData={transcriptState.audioData || undefined}
-          recordingDuration={transcriptState.recordingDuration}
+          recordingDuration={recordingState.duration}
+          bubblePosition={bubblePosition}
         />
       )}
 

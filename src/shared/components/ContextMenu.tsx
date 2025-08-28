@@ -3,7 +3,9 @@
  */
 import { useEffect, useRef } from 'react';
 import { Paper, Stack, UnstyledButton, Text } from '@mantine/core';
-import { colors, glass, zIndex, spacing } from '@shared/lib/design-tokens';
+import { useComponentPosition } from '@shared/layout/useComponentPosition';
+import { Position } from '@shared/layout/positioning';
+import { zIndex, colors, components, spacing } from '@shared/lib/design-tokens';
 
 interface ContextMenuItem {
   label: string;
@@ -14,13 +16,21 @@ interface ContextMenuItem {
 
 interface ContextMenuProps {
   items: ContextMenuItem[];
-  position: { x: number; y: number };
   isVisible: boolean;
   onClose: () => void;
+  bubblePosition: Position;
 }
 
-export function ContextMenu({ items, position, isVisible, onClose }: ContextMenuProps) {
+export function ContextMenu({ items, isVisible, onClose, bubblePosition }: ContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
+
+  // Use simplified positioning system
+  const calculatedPosition = useComponentPosition({
+    bubblePosition,
+    componentSize: components.contextMenu.size,
+    config: components.contextMenu.positioning,
+    isVisible,
+  });
 
   useEffect(() => {
     if (!isVisible) return;
@@ -51,21 +61,22 @@ export function ContextMenu({ items, position, isVisible, onClose }: ContextMenu
   }, [isVisible, onClose]);
 
   if (!isVisible) return null;
+  if (!calculatedPosition) return null; // Don't render until we have a position
 
   return (
     <Paper
       ref={menuRef}
       style={{
         position: 'fixed',
-        left: `${position.x}px`,
-        top: `${position.y}px`,
-        zIndex: zIndex.bubble + 100,
-        minWidth: '150px',
-        background: glass.background.dark,
-        border: `1px solid ${glass.border.subtle}`,
-        borderRadius: '8px',
-        backdropFilter: glass.blur.medium,
-        boxShadow: glass.shadow.prominent,
+        left: `${calculatedPosition.x}px`,
+        top: `${calculatedPosition.y}px`,
+        zIndex: zIndex.contextMenu,
+        minWidth: components.contextMenu.size.width,
+        background: components.contextMenu.styles.background,
+        border: components.contextMenu.styles.border,
+        borderRadius: components.contextMenu.styles.borderRadius,
+        backdropFilter: components.contextMenu.styles.backdropFilter,
+        boxShadow: components.contextMenu.styles.boxShadow,
         padding: spacing.xs,
         pointerEvents: 'auto',
       }}

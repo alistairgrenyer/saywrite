@@ -3,41 +3,39 @@
  * Moved from src/components/TranscriptWindow.tsx
  */
 import { useState, useEffect } from 'react';
-import { Paper, Textarea, ActionIcon, Text, Loader, Group } from '@mantine/core';
+import { Paper, Group, Text, Textarea, ActionIcon, Loader } from '@mantine/core';
 import { AudioPlayback } from './AudioPlayback';
-import { Position } from '@shared/lib/types';
-import { useRelativePosition } from '@shared/hooks/useRelativePosition';
-import { dimensions, zIndex, typography, colors } from '@shared/lib/design-tokens';
+import { components, zIndex, colors, typography } from '@shared/lib/design-tokens';
+import { useComponentPosition } from '@shared/layout/useComponentPosition';
+import { Position } from '@shared/layout/positioning';
 import '@/styles/shared.css';
 import './TranscriptWindow.css';
 
 interface TranscriptWindowProps {
   text: string;
   isProcessing?: boolean;
-  bubblePosition: Position;
   onClose: () => void;
   audioData?: ArrayBuffer;
   recordingDuration?: number;
+  bubblePosition: Position;
 }
 
 export function TranscriptWindow({ 
   text, 
   isProcessing = false, 
-  bubblePosition, 
   onClose, 
   audioData, 
-  recordingDuration = 0 
+  recordingDuration = 0,
+  bubblePosition 
 }: TranscriptWindowProps) {
   const [editableText, setEditableText] = useState(text);
 
-  // Use relative positioning based on bubble position
-  const { position } = useRelativePosition({
-    parentPosition: bubblePosition,
-    componentType: 'transcript',
-    elementSize: { 
-      width: parseInt(dimensions.panel.maxWidth), 
-      height: parseInt(dimensions.panel.minHeight) 
-    },
+  // Use simplified positioning system
+  const position = useComponentPosition({
+    bubblePosition,
+    componentSize: components.transcript.size,
+    config: components.transcript.positioning,
+    isVisible: !!(text || isProcessing),
   });
 
   useEffect(() => {
@@ -45,6 +43,7 @@ export function TranscriptWindow({
   }, [text]);
 
   if (!text && !isProcessing) return null;
+  if (!position) return null; // Don't render until we have a position
 
   return (
     <Paper
@@ -54,14 +53,13 @@ export function TranscriptWindow({
         left: `${position.x}px`,
         top: `${position.y}px`,
         zIndex: zIndex.transcript,
-        minWidth: '320px',
-        maxWidth: '90vw',
-        minHeight: '200px',
-        maxHeight: '80vh',
-        width: 'auto',
-        height: 'auto',
-        resize: 'both',
-        overflow: 'hidden',
+        width: `${components.transcript.size.width}px`,
+        height: `${components.transcript.size.height}px`,
+        minWidth: `${components.transcript.minSize?.width}px`,
+        minHeight: `${components.transcript.minSize?.height}px`,
+        maxWidth: `${components.transcript.maxSize?.width}px`,
+        maxHeight: `${components.transcript.maxSize?.height}px`,
+        ...components.transcript.styles,
         display: 'flex',
         flexDirection: 'column'
       }}

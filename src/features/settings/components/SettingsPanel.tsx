@@ -4,9 +4,9 @@
 import { useState } from 'react';
 import { Paper, Tabs, Select, Checkbox, Slider, ActionIcon, Text, Stack, Group } from '@mantine/core';
 import { AppSettings } from '../hooks/useSettings';
-import { Position } from '@shared/lib/types';
-import { useRelativePosition } from '@shared/hooks/useRelativePosition';
-import { dimensions, zIndex, colors } from '@shared/lib/design-tokens';
+import { useComponentPosition } from '@shared/layout/useComponentPosition';
+import { Position } from '@shared/layout/positioning';
+import { zIndex, colors, components } from '@shared/lib/design-tokens';
 import '@/styles/shared.css';
 import './SettingsPanel.css';
 
@@ -21,18 +21,16 @@ interface SettingsPanelProps {
 export function SettingsPanel({ settings, onUpdateSettings, onClose, isVisible, bubblePosition }: SettingsPanelProps) {
   const [activeTab, setActiveTab] = useState<'audio' | 'ui' | 'transcription'>('audio');
 
-  // Use relative positioning based on bubble position
-  const { position } = useRelativePosition({
-    parentPosition: bubblePosition,
-    componentType: 'settings',
-    elementSize: { 
-      width: parseInt(dimensions.panel.minWidth), 
-      height: parseInt(dimensions.panel.minHeight) 
-    },
-    enabled: isVisible,
+  // Use simplified positioning system
+  const position = useComponentPosition({
+    bubblePosition,
+    componentSize: components.settings.size,
+    config: components.settings.positioning,
+    isVisible,
   });
 
   if (!isVisible) return null;
+  if (!position) return null; // Don't render until we have a position
 
   const tabs = [
     { id: 'audio' as const, label: 'Audio', icon: '🎤' },
@@ -178,11 +176,17 @@ export function SettingsPanel({ settings, onUpdateSettings, onClose, isVisible, 
         position: 'fixed',
         left: `${position.x}px`,
         top: `${position.y}px`,
+        width: components.settings.size.width,
+        minHeight: components.settings.minSize.height,
+        maxHeight: components.settings.maxSize.height,
+        background: components.settings.styles.background,
+        backdropFilter: components.settings.styles.backdropFilter,
+        border: components.settings.styles.border,
+        borderRadius: components.settings.styles.borderRadius,
+        boxShadow: components.settings.styles.boxShadow,
         zIndex: zIndex.settings,
-        minWidth: '320px',
-        maxWidth: '90vw',
-        maxHeight: '80vh',
-        overflow: 'hidden'
+        display: 'flex',
+        flexDirection: 'column',
       }}
     >
       <Stack gap={0} style={{ height: '100%' }}>
