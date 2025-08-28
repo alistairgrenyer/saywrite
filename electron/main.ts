@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, shell } from 'electron'
+import { app, BrowserWindow, ipcMain, shell, screen } from 'electron'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import { WhisperService } from './main/whisperService.js'
@@ -85,23 +85,62 @@ ipcMain.on('app:close', () => {
   app.quit()
 })
 
+// Allow renderer to toggle click-through interactivity
+ipcMain.handle('window:setIgnoreMouseEvents', (_evt, ignore: boolean) => {
+  if (win && !win.isDestroyed()) {
+    try {
+      win.setIgnoreMouseEvents(Boolean(ignore), { forward: true })
+    } catch {}
+  }
+})
+
 function createWindow() {
-  const isDev = process.env.NODE_ENV === 'development';
-  
-  win = new BrowserWindow({
-    width: isDev ? 500 : 300,
-    height: isDev ? 400 : 200,
-    frame: isDev, // Show frame in dev for easier debugging
-    transparent: !isDev, // Only transparent in production
-    alwaysOnTop: true,
-    resizable: isDev, // Allow resizing in dev
-    skipTaskbar: !isDev, // Show in taskbar during dev
-    webPreferences: {
-      preload: path.join(__dirname, 'preload.mjs'),
-      contextIsolation: true,
-      nodeIntegration: false,
-    },
-  })
+  // Prefer app.isPackaged over NODE_ENV for reliable env detection in Electron
+  const isDev = !app.isPackaged
+  const useDebugWindow = isDev && process.env.DEBUG_WINDOW === '1'
+
+  if (useDebugWindow) {
+    // Debug window keeps the small movable frame
+    win = new BrowserWindow({
+      width: 480,
+      height: 360,
+      frame: true,
+      transparent: false,
+      backgroundColor: '#1e1e1e',
+      alwaysOnTop: true,
+      resizable: true,
+      skipTaskbar: false,
+      hasShadow: true,
+      webPreferences: {
+        preload: path.join(__dirname, 'preload.mjs'),
+        contextIsolation: true,
+        nodeIntegration: false,
+      },
+    })
+  } else {
+    // Overlay mode: full-screen, transparent, click-through except the bubble
+    const { bounds } = screen.getPrimaryDisplay()
+    win = new BrowserWindow({
+      x: bounds.x,
+      y: bounds.y,
+      width: bounds.width,
+      height: bounds.height,
+      frame: false,
+      transparent: true,
+      backgroundColor: '#00000000',
+      alwaysOnTop: true,
+      resizable: false,
+      skipTaskbar: true,
+      hasShadow: false,
+      webPreferences: {
+        preload: path.join(__dirname, 'preload.mjs'),
+        contextIsolation: true,
+        nodeIntegration: false,
+      },
+    })
+    // Make the window click-through by default; renderer will disable over the bubble
+    win.setIgnoreMouseEvents(true, { forward: true })
+  }
 
   // Ensure it stays on top even above fullscreen apps
   win.setAlwaysOnTop(true, "screen-saver")

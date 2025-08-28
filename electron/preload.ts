@@ -61,4 +61,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   closeApp(): void {
     ipcRenderer.send('app:close')
   },
+
+  setIgnoreMouseEvents(ignore: boolean): Promise<void> {
+    return ipcRenderer.invoke('window:setIgnoreMouseEvents', ignore)
+  },
 })
