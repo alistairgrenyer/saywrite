@@ -2,7 +2,7 @@
  * Transcript window component with editing capabilities
  * Moved from src/components/TranscriptWindow.tsx
  */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Paper, Group, Text, Textarea, ActionIcon, Loader } from '@mantine/core';
 import { AudioPlayback } from './AudioPlayback';
 import { components, zIndex, colors, typography } from '@shared/lib/design-tokens';
@@ -30,6 +30,12 @@ export function TranscriptWindow({
 }: TranscriptWindowProps) {
   const [editableText, setEditableText] = useState(text);
 
+  const setIgnore = (ignore: boolean) => {
+    try { (window as any).electronAPI?.setIgnoreMouseEvents?.(ignore); } catch {}
+  };
+  const handleMouseEnter = useCallback(() => setIgnore(false), []);
+  const handleMouseLeave = useCallback(() => setIgnore(true), []);
+
   // Use simplified positioning system
   const position = useComponentPosition({
     bubblePosition,
@@ -47,6 +53,8 @@ export function TranscriptWindow({
 
   return (
     <Paper
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
       className="transcript-window"
       style={{
         position: 'fixed',
@@ -61,7 +69,8 @@ export function TranscriptWindow({
         maxHeight: `${components.transcript.maxSize?.height}px`,
         ...components.transcript.styles,
         display: 'flex',
-        flexDirection: 'column'
+        flexDirection: 'column',
+        pointerEvents: 'auto',
       }}
     >
       {/* Header */}

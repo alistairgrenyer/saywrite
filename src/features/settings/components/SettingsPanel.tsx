@@ -1,7 +1,7 @@
 /**
  * Settings panel component
  */
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Paper, Tabs, Select, Checkbox, Slider, ActionIcon, Text, Stack, Group } from '@mantine/core';
 import { AppSettings } from '../hooks/useSettings';
 import { useComponentPosition } from '@shared/layout/useComponentPosition';
@@ -20,6 +20,12 @@ interface SettingsPanelProps {
 
 export function SettingsPanel({ settings, onUpdateSettings, onClose, isVisible, bubblePosition }: SettingsPanelProps) {
   const [activeTab, setActiveTab] = useState<'audio' | 'ui' | 'transcription'>('audio');
+
+  const setIgnore = (ignore: boolean) => {
+    try { (window as any).electronAPI?.setIgnoreMouseEvents?.(ignore); } catch {}
+  };
+  const handleMouseEnter = useCallback(() => setIgnore(false), []);
+  const handleMouseLeave = useCallback(() => setIgnore(true), []);
 
   // Use simplified positioning system
   const position = useComponentPosition({
@@ -171,6 +177,8 @@ export function SettingsPanel({ settings, onUpdateSettings, onClose, isVisible, 
 
   return (
     <Paper
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
       className="settings-panel"
       style={{
         position: 'fixed',
@@ -187,6 +195,7 @@ export function SettingsPanel({ settings, onUpdateSettings, onClose, isVisible, 
         zIndex: zIndex.settings,
         display: 'flex',
         flexDirection: 'column',
+        pointerEvents: 'auto',
       }}
     >
       <Stack gap={0} style={{ height: '100%' }}>

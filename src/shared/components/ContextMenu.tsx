@@ -1,7 +1,7 @@
 /**
  * Context menu component for right-click interactions
  */
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { Paper, Stack, UnstyledButton, Text } from '@mantine/core';
 import { useComponentPosition } from '@shared/layout/useComponentPosition';
 import { Position } from '@shared/layout/positioning';
@@ -23,6 +23,12 @@ interface ContextMenuProps {
 
 export function ContextMenu({ items, isVisible, onClose, bubblePosition }: ContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
+
+  const setIgnore = (ignore: boolean) => {
+    try { (window as any).electronAPI?.setIgnoreMouseEvents?.(ignore); } catch {}
+  };
+  const handleMouseEnter = useCallback(() => setIgnore(false), []);
+  const handleMouseLeave = useCallback(() => setIgnore(true), []);
 
   // Use simplified positioning system
   const calculatedPosition = useComponentPosition({
@@ -66,6 +72,8 @@ export function ContextMenu({ items, isVisible, onClose, bubblePosition }: Conte
   return (
     <Paper
       ref={menuRef}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
       style={{
         position: 'fixed',
         left: `${calculatedPosition.x}px`,
