@@ -42,3 +42,14 @@ contextBridge.exposeInMainWorld('app', {
   },
 
 })
+
+// --------- Expose Electron API surface ---------
+contextBridge.exposeInMainWorld('electronAPI', {
+  openExternal(url: string): Promise<void> {
+    return ipcRenderer.invoke('shell:openExternal', url)
+  },
+
+  closeApp(): void {
+    ipcRenderer.send('app:close')
+  },
+})

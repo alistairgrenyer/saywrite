@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron'
+import { app, BrowserWindow, ipcMain, shell } from 'electron'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import { WhisperService } from './main/whisperService.js'
@@ -51,6 +51,21 @@ ipcMain.handle('recording:stop', async (_, pcmF32Buf: ArrayBuffer) => {
     win?.webContents.send('stt:error', error.message || 'Transcription failed')
     throw error
   }
+})
+
+// Shell handlers
+ipcMain.handle('shell:openExternal', async (_, url: string) => {
+  try {
+    await shell.openExternal(url)
+  } catch (error) {
+    console.error('Failed to open external URL:', error)
+    throw error
+  }
+})
+
+// App handlers
+ipcMain.on('app:close', () => {
+  app.quit()
 })
 
 function createWindow() {

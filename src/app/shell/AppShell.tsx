@@ -12,10 +12,12 @@ import { TranscriptWindow } from '@features/transcript';
 import { SettingsPanel } from '@features/settings';
 import { ErrorDisplay } from '../components/ErrorDisplay';
 import { ContextMenu } from '@shared/components/ContextMenu';
+import { authService } from '@shared/lib/auth';
 import '@/styles/shared.css';
 
 export function AppShell() {
   const [showSettings, setShowSettings] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(authService.isAuthenticated());
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; visible: boolean }>({
     x: 0,
     y: 0,
@@ -86,6 +88,21 @@ export function AppShell() {
       await stopRecording();
     }
   }, [clearError, recordingState.isRecording, startRecording, stopRecording]);
+
+  const handleLogin = useCallback(async () => {
+    try {
+      await authService.openLoginPortal();
+      setContextMenu(prev => ({ ...prev, visible: false }));
+    } catch (error) {
+      setErrorMessage('Failed to open login portal');
+    }
+  }, [setErrorMessage]);
+
+  const handleLogout = useCallback(() => {
+    authService.logout();
+    setIsAuthenticated(false);
+    setContextMenu(prev => ({ ...prev, visible: false }));
+  }, []);
 
   const handleExit = useCallback(() => {
     // Close the application via Electron IPC
@@ -165,6 +182,19 @@ export function AppShell() {
               setContextMenu(prev => ({ ...prev, visible: false }));
             }
           },
+          ...(isAuthenticated ? [
+            {
+              label: 'Logout',
+              icon: '🚪',
+              onClick: handleLogout
+            }
+          ] : [
+            {
+              label: 'Login',
+              icon: '🔑',
+              onClick: handleLogin
+            }
+          ]),
           {
             label: 'Exit',
             icon: '🚪',
