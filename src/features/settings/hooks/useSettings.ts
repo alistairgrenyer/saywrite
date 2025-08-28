@@ -86,13 +86,13 @@ export const useSettings = (): UseSettingsReturn => {
       const saved = localStorage.getItem('saywrite-settings');
       if (saved) {
         const parsedSettings = JSON.parse(saved);
-        setSettings(prev => ({
+        setSettings({
           ...defaultSettings,
           ...parsedSettings,
           audioSettings: { ...defaultSettings.audioSettings, ...parsedSettings.audioSettings },
           uiSettings: { ...defaultSettings.uiSettings, ...parsedSettings.uiSettings },
           transcriptionSettings: { ...defaultSettings.transcriptionSettings, ...parsedSettings.transcriptionSettings },
-        }));
+        });
       }
     } catch (error) {
       console.error('Failed to load settings:', error);

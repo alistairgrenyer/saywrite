@@ -25,7 +25,6 @@ export const usePosition = ({
   const [position, setPositionState] = useState<Position>(initialPosition);
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState<Position>({ x: 0, y: 0 });
-  const [hasDragged, setHasDragged] = useState(false);
   const elementRef = useRef<HTMLElement | null>(null);
   const animationRef = useRef<number>();
 
@@ -44,14 +43,11 @@ export const usePosition = ({
       y: e.clientY - rect.top
     });
     setIsDragging(true);
-    setHasDragged(false);
     e.preventDefault();
   }, []);
 
   const handleMouseMove = useCallback((e: MouseEvent) => {
     if (!isDragging || !elementRef.current) return;
-
-    setHasDragged(true);
 
     if (animationRef.current) {
       cancelAnimationFrame(animationRef.current);

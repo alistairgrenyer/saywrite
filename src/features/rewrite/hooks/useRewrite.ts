@@ -56,7 +56,7 @@ export const useRewrite = ({ onError }: UseRewriteOptions = {}): UseRewriteRetur
 };
 
 // Helper function to generate basic suggestions
-function generateSuggestions(text: string, style: string): string[] {
+function generateSuggestions(_text: string, style: string): string[] {
   const suggestions: string[] = [];
   
   switch (style) {
