@@ -7,15 +7,20 @@ import { useTranscript } from '@features/transcript';
 import { useSettings } from '@features/settings';
 import { useError } from '@shared/hooks/useError';
 import { useBubblePosition } from '@shared/layout/useBubblePosition';
-import { Position } from '@shared/layout/positioning';
 import { DraggableBubble } from '../components/DraggableBubble';
 import { TranscriptWindow } from '@features/transcript';
 import { SettingsPanel } from '@features/settings';
 import { ErrorDisplay } from '../components/ErrorDisplay';
+import { ContextMenu } from '@shared/components/ContextMenu';
 import '@/styles/shared.css';
 
 export function AppShell() {
   const [showSettings, setShowSettings] = useState(false);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; visible: boolean }>({
+    x: 0,
+    y: 0,
+    visible: false
+  });
   
   // Global error handling
   const { error, setErrorMessage, clearError } = useError();
@@ -28,19 +33,12 @@ export function AppShell() {
     settings.uiSettings.bubblePosition
   );
   
-  // Handle bubble position changes
-  const handleBubblePositionChange = useCallback((newPosition: Position) => {
-    updateBubblePosition(newPosition);
-    updateSettings({
-      uiSettings: { ...settings.uiSettings, bubblePosition: newPosition }
-    });
-  }, [updateBubblePosition, updateSettings, settings.uiSettings]);
 
   // Recording functionality
   const { recordingState, startRecording, stopRecording } = useRecorder({
     sampleRate: settings.audioSettings.sampleRate,
     channels: settings.audioSettings.channels,
-    bufferSize: settings.audioSettings.bufferSize,
+    bufferSize: 2048,
     onError: setErrorMessage
   });
 
@@ -119,10 +117,9 @@ export function AppShell() {
         <DraggableBubble
           recordingState={recordingState}
           onToggleRecording={handleToggleRecording}
-          onOpenSettings={() => setShowSettings(true)}
-          onExit={handleExit}
           position={bubblePosition}
-          onPositionChange={handleBubblePositionChange}
+          onPositionChange={updateBubblePosition}
+          onContextMenu={(x: number, y: number) => setContextMenu({ x, y, visible: true })}
         />
       </div>
 
@@ -154,6 +151,31 @@ export function AppShell() {
         onUpdateSettings={updateSettings}
         onClose={() => setShowSettings(false)}
         isVisible={showSettings}
+        bubblePosition={bubblePosition}
+      />
+
+      {/* Context menu - rendered at app level to avoid stacking context issues */}
+      <ContextMenu
+        items={[
+          {
+            label: 'Settings',
+            icon: '⚙️',
+            onClick: () => {
+              setShowSettings(true);
+              setContextMenu(prev => ({ ...prev, visible: false }));
+            }
+          },
+          {
+            label: 'Exit',
+            icon: '🚪',
+            onClick: () => {
+              handleExit();
+              setContextMenu(prev => ({ ...prev, visible: false }));
+            }
+          }
+        ]}
+        isVisible={contextMenu.visible}
+        onClose={() => setContextMenu(prev => ({ ...prev, visible: false }))}
         bubblePosition={bubblePosition}
       />
     </>

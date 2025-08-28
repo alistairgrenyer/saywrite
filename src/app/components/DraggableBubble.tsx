@@ -3,7 +3,6 @@
  */
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { RecordingButton, RecordingMeter } from '@features/recorder';
-import { ContextMenu } from '@shared/components/ContextMenu';
 import { Position, RecordingState } from '@shared/lib/types';
 import { zIndex } from '@shared/lib/design-tokens';
 import '@/styles/shared.css';
@@ -12,28 +11,21 @@ import './DraggableBubble.css';
 interface DraggableBubbleProps {
   recordingState: RecordingState;
   onToggleRecording: () => void;
-  onOpenSettings: () => void;
-  onExit: () => void;
   position: Position;
   onPositionChange: (position: Position) => void;
+  onContextMenu: (x: number, y: number) => void;
 }
 
 export function DraggableBubble({ 
   recordingState, 
   onToggleRecording, 
-  onOpenSettings,
-  onExit,
   position, 
-  onPositionChange
+  onPositionChange,
+  onContextMenu
 }: DraggableBubbleProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [hasDragged, setHasDragged] = useState(false);
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; visible: boolean }>({
-    x: 0,
-    y: 0,
-    visible: false
-  });
   const bubbleRef = useRef<HTMLDivElement>(null);
   const animationRef = useRef<number>();
 
@@ -86,16 +78,8 @@ export function DraggableBubble({
 
   const handleContextMenu = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
-    setContextMenu({
-      x: e.clientX,
-      y: e.clientY,
-      visible: true
-    });
-  }, []);
-
-  const handleCloseContextMenu = useCallback(() => {
-    setContextMenu(prev => ({ ...prev, visible: false }));
-  }, []);
+    onContextMenu(e.clientX, e.clientY);
+  }, [onContextMenu]);
 
   useEffect(() => {
     if (isDragging) {
@@ -117,19 +101,6 @@ export function DraggableBubble({
       bubbleRef.current.style.transform = `translate3d(${position.x}px, ${position.y}px, 0)`;
     }
   }, [position, isDragging]);
-
-  const contextMenuItems = [
-    {
-      label: 'Settings',
-      icon: '⚙️',
-      onClick: onOpenSettings
-    },
-    {
-      label: 'Exit',
-      icon: '🚪',
-      onClick: onExit
-    }
-  ];
 
   return (
     <>
@@ -171,12 +142,6 @@ export function DraggableBubble({
         </div>
       </div>
 
-      <ContextMenu
-        items={contextMenuItems}
-        isVisible={contextMenu.visible}
-        onClose={handleCloseContextMenu}
-        bubblePosition={position}
-      />
     </>
   );
 }
